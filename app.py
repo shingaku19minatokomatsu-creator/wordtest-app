@@ -13,6 +13,7 @@ from reportlab.lib.units import mm
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.cidfonts import UnicodeCIDFont
 import os
+from reportlab.pdfbase.pdfmetrics import stringWidth
 
 # ====== 設定 ======
 EXCEL_PATH = Path("英単語テスト.xlsx")
@@ -178,6 +179,15 @@ async function doGenerate(e){
 </html>
 """
 
+def fit_font_size(text, font, max_width, max_size=11, min_size=8):
+    """
+    文字が max_width に収まるフォントサイズを返す
+    """
+    for size in range(max_size, min_size - 1, -1):
+        w = stringWidth(text, font, size)
+        if w <= max_width:
+            return size
+    return min_size
 
 # ===== Excel 読込 ======
 def load_sheet_rows(path, sheet):
@@ -268,7 +278,16 @@ def make_two_page_pdf(items, sheet, start, end):
                     c.line(lx1, y - 3, lx2, y - 3)
                 else:
                     ax = qx + 60*mm
-                    c.drawString(ax, y, r['a'])
+                    max_answer_width = col_w - (ax - base_x) - 5*mm  # 右端までの距離
+                    
+                    answer = r['a']
+                    
+                    # フォントサイズを自動調整
+                    font_size = fit_font_size(answer, DEFAULT_FONT, max_answer_width)
+                    
+                    c.setFont(DEFAULT_FONT, font_size)
+                    c.drawString(ax, y, answer)
+
 
         draw_col(left_x, 0)
         draw_col(right_x, 20)
@@ -318,6 +337,7 @@ def serve_pdf(filename):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 3710))
     app.run(host="0.0.0.0", port=port)
+
 
 
 
