@@ -208,16 +208,6 @@ def make_single_pdf(items, sheet, start, end, mode_label):
     c.save()
     return filename
 
-# ===== PDF 結合 =====
-def merge_two_pdfs(qpdf, apdf):
-    final = TMPDIR / f"{uuid.uuid4().hex}_final.pdf"
-    merger = PdfMerger()
-    merger.append(str(qpdf))
-    merger.append(str(apdf))
-    merger.write(str(final))
-    merger.close()
-    return final
-
 # ===== Routes ======
 @app.route("/")
 def index():
@@ -239,9 +229,6 @@ def generate():
     # 2ページ目（解答）
     apdf = make_single_pdf(items, sheet, start, end, "a")
 
-    # 結合
-    final_pdf = merge_two_pdfs(qpdf, apdf)
-
     return jsonify({
         "pdf_url": f"/pdf/{final_pdf.name}"
     })
@@ -260,5 +247,6 @@ import os
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 3710))
     app.run(host="0.0.0.0", port=port)
+
 
 
