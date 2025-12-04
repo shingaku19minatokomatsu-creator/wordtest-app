@@ -34,7 +34,7 @@ INDEX_HTML = """
 <html>
 <head>
 <meta charset="utf-8">
-<title>単語テスト生成</title>
+<title>単語テスト</title>
 <style>
 body{font-family: Arial, sans-serif; max-width:920px; margin:18px auto; padding:8px;}
 label{display:inline-block; width:120px;}
@@ -45,7 +45,7 @@ input,select,button{padding:6px; font-size:15px;}
 </head>
 <body>
 
-<h2>単語テスト PDF 生成（A方式：1つのPDF）</h2>
+<h2>単語テスト</h2>
 <div class="note">※「表示」で test.pdf（問題→解答）が1つのPDFで開きます。</div>
 
 <form id="form" onsubmit="return doGenerate(event)">
@@ -243,4 +243,5 @@ def serve_pdf(filename):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 3710))
     app.run(host="0.0.0.0", port=port)
+
 
