@@ -39,7 +39,7 @@ INDEX_HTML = """
 <html>
 <head>
 <meta charset="utf-8">
-<title>単語テスト生成（A方式）</title>
+<title>単語テスト</title>
 <style>
 body{
     font-family: Arial, sans-serif;
@@ -63,7 +63,7 @@ button{
 </head>
 <body>
 
-<h2 style="font-size:26px;">単語テスト PDF 生成（問題→解答 1つのPDF）</h2>
+<h2 style="font-size:26px;">単語テスト</h2>
 <div class="note">※「表示」を押すと test.pdf（2ページ構成）が開きます。</div>
 
 <form id="form" onsubmit="return doGenerate(event)">
@@ -320,3 +320,4 @@ def serve_pdf(filename):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 3710))
     app.run(host="0.0.0.0", port=port)
+
