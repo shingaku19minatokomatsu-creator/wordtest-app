@@ -1,5 +1,5 @@
 # app.py
-# A方式：1つの PDF に「問題ページ → 解答ページ」の2ページ構成で test.pdf を生成
+# A方式：問題PDFと解答PDFを1つのPDFに結合して test.pdf を表示する
 
 import random
 import uuid
@@ -12,104 +12,59 @@ from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.units import mm
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.cidfonts import UnicodeCIDFont
-import os
 from reportlab.pdfbase.pdfmetrics import stringWidth
+from PyPDF2 import PdfMerger
+import os
+
 
 # ====== 設定 ======
 EXCEL_PATH = Path("英単語テスト.xlsx")
 TMPDIR = Path(gettempdir()) / "word_a_mode"
 TMPDIR.mkdir(parents=True, exist_ok=True)
 
+
 app = Flask(__name__)
 
-# 日本語フォント
+# ===== 日本語フォント =====
 DEFAULT_FONT = "HeiseiMin-W3"
 try:
     pdfmetrics.registerFont(UnicodeCIDFont(DEFAULT_FONT))
 except Exception:
     DEFAULT_FONT = "Helvetica"
 
-# ===== HTML ======
+
+# ===== UI（スマホ対応で大きめ） =====
 INDEX_HTML = """
 <!doctype html>
 <html>
 <head>
 <meta charset="utf-8">
 <title>単語テスト生成（A方式）</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <style>
-body {
+body{
     font-family: Arial, sans-serif;
-    max-width: 900px;
-    margin: 0 auto;
-    padding: 18px;
-    font-size: 18px;
+    max-width:980px;
+    margin:18px auto;
+    padding:14px;
+    font-size:18px;
 }
-
-h2 {
-    font-size: 26px;
-    margin-bottom: 10px;
+label{display:inline-block; width:180px; font-size:20px;}
+input,select,button{
+    padding:10px;
+    font-size:20px;
 }
-
-label {
-    display: block;
-    font-size: 18px;
-    margin-bottom: 4px;
+.row{margin:14px 0;}
+button{
+    padding:12px 28px;
+    font-size:22px;
 }
-
-input, select, button {
-    padding: 12px;
-    font-size: 18px;
-    width: 100%;
-    box-sizing: border-box;
-}
-
-.row {
-    margin: 15px 0;
-}
-
-button {
-    background-color: #007bff;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    font-size: 20px;
-    padding: 14px;
-    cursor: pointer;
-}
-
-button:hover {
-    background-color: #0056c7;
-}
-
-.note {
-    color: #666;
-    font-size: 15px;
-    margin-bottom: 10px;
-}
-
-/* スマホ用 */
-@media (max-width: 600px) {
-    body {
-        padding: 14px;
-        font-size: 17px;
-    }
-    input, select, button {
-        font-size: 18px;
-        padding: 14px;
-    }
-    h2 {
-        font-size: 24px;
-    }
-}
+.note{color:#666; font-size:16px;}
 </style>
 </head>
-
 <body>
 
-<h2>単語テスト PDF 生成（A方式）</h2>
-<div class="note">※「表示」を押すと test.pdf（問題→解答）が開きます。</div>
+<h2 style="font-size:26px;">単語テスト PDF 生成（問題→解答 1つのPDF）</h2>
+<div class="note">※「表示」を押すと test.pdf（2ページ構成）が開きます。</div>
 
 <form id="form" onsubmit="return doGenerate(event)">
   <div class="row">
@@ -121,19 +76,10 @@ button:hover {
     </select>
   </div>
 
-  <div class="row">
-    <label>開始番号</label>
-    <input id="start" required>
-  </div>
+  <div class="row"><label>開始番号</label><input id="start" required></div>
+  <div class="row"><label>終了番号</label><input id="end" required></div>
 
-  <div class="row">
-    <label>終了番号</label>
-    <input id="end" required>
-  </div>
-
-  <div class="row">
-    <button type="submit">表示</button>
-  </div>
+  <div class="row"><button type="submit">表示</button></div>
 </form>
 
 <script>
@@ -174,41 +120,10 @@ async function doGenerate(e){
   return false;
 }
 </script>
-
 </body>
 </html>
 """
 
-def wrap_text(text, font, size, max_width):
-    """
-    指定フォント・サイズで max_width に収まるように折り返す
-    """
-    words = text.split(" ")
-    lines = []
-    current = ""
-
-    for w in words:
-        test = (current + " " + w).strip()
-        if stringWidth(test, font, size) <= max_width:
-            current = test
-        else:
-            if current:
-                lines.append(current)
-            current = w
-    if current:
-        lines.append(current)
-
-    return lines
-
-def fit_font_size(text, font, max_width, max_size=11, min_size=8):
-    """
-    文字が max_width に収まるフォントサイズを返す
-    """
-    for size in range(max_size, min_size - 1, -1):
-        w = stringWidth(text, font, size)
-        if w <= max_width:
-            return size
-    return min_size
 
 # ===== Excel 読込 ======
 def load_sheet_rows(path, sheet):
@@ -221,7 +136,7 @@ def load_sheet_rows(path, sheet):
             continue
         try:
             num = int(float(a))
-        except:
+        except Exception:
             num = None
         rows.append({
             "num": num,
@@ -229,6 +144,7 @@ def load_sheet_rows(path, sheet):
             "a": "" if c is None else str(c)
         })
     return rows
+
 
 # ===== 40問抽出 ======
 def pick40(rows, start, end):
@@ -241,9 +157,46 @@ def pick40(rows, start, end):
         rr["no"] = i + 1
     return r
 
-# ===== 1つのPDFに「問題→解答」2ページ作成 ======
-def make_two_page_pdf(items, sheet, start, end):
-    filename = TMPDIR / f"{uuid.uuid4().hex}_final.pdf"
+
+# ===== 解答テキストを強制フィット（絶対重ならない） =====
+def draw_answer_fitted(c, text, font, base_x, base_y, max_width, max_height):
+    font_size = 11  # 最大
+    while font_size >= 5:  # 最小5pt
+        line_gap = max(1, int(font_size * 0.2))
+
+        words = text.split(" ")
+        lines = []
+        current = ""
+        for w in words:
+            tmp = (current + " " + w).strip()
+            if stringWidth(tmp, font, font_size) <= max_width:
+                current = tmp
+            else:
+                if current:
+                    lines.append(current)
+                current = w
+        if current:
+            lines.append(current)
+
+        total_h = len(lines) * font_size + (len(lines) - 1) * line_gap
+
+        if total_h <= max_height:
+            c.setFont(font, font_size)
+            y = base_y
+            for ln in lines:
+                c.drawString(base_x, y, ln)
+                y -= (font_size + line_gap)
+            return
+
+        font_size -= 1
+
+    c.setFont(font, 5)
+    c.drawString(base_x, base_y, text[:20] + "...")
+
+
+# ===== 単独PDF生成 =====
+def make_single_pdf(items, sheet, start, end, mode_label):
+    filename = TMPDIR / f"{uuid.uuid4().hex}_{mode_label}.pdf"
     c = canvas.Canvas(str(filename), pagesize=landscape(A4))
     PW, PH = landscape(A4)
 
@@ -255,98 +208,84 @@ def make_two_page_pdf(items, sheet, start, end):
     left_x = margin
     right_x = left_x + col_w + col_gap
 
-    def draw_page(mode_label):
-        # header
-        title_y = PH - 15*mm
-        words_y = title_y - 8*mm
-        start_y = words_y - 10*mm
+    title_y = PH - 15*mm
+    words_y = title_y - 8*mm
+    start_y = words_y - 10*mm
 
-        c.setFont(DEFAULT_FONT, 16)
-        c.drawString(left_x, title_y, "shingaku19minato test")
+    c.setFont(DEFAULT_FONT, 16)
+    c.drawString(left_x, title_y, "shingaku19minato test")
 
-        c.setFont(DEFAULT_FONT, 12)
-        c.drawString(left_x, words_y, f"words  {sheet}（{start}～{end}）")
+    c.setFont(DEFAULT_FONT, 12)
+    c.drawString(left_x, words_y, f"words  {sheet}（{start}～{end}）")
 
-        c.setFont(DEFAULT_FONT, 11)
-        c.drawString(PW - margin - 170, title_y, "name：________________")
-        c.drawString(PW - margin - 170, title_y - 8*mm, "score：________________")
+    c.setFont(DEFAULT_FONT, 11)
+    c.drawString(PW - margin - 170, title_y, "name：________________")
+    c.drawString(PW - margin - 170, title_y - 8*mm, "score：________________")
 
-        # body
-        rows_per_col = 20
-        bottom = 15*mm
-        avail_h = start_y - bottom
-        line_h = avail_h / 22
-        if line_h > 13*mm: line_h = 13*mm
-        if line_h < 8*mm:  line_h = 9*mm
+    rows_per_col = 20
+    bottom = 15*mm
+    avail_h = start_y - bottom
+    line_h = avail_h / 22
+    if line_h > 13*mm: line_h = 13*mm
+    if line_h < 8*mm:  line_h = 9*mm
 
-        def draw_col(base_x, idx0):
-            for i in range(rows_per_col):
-                if idx0+i >= len(items): break
-                r = items[idx0+i]
-                y = start_y - i*line_h
+    def draw_col(base_x, idx0):
+        for i in range(rows_per_col):
+            if idx0+i >= len(items): break
+            r = items[idx0+i]
+            y = start_y - i*line_h
 
-                c.setFont(DEFAULT_FONT, 11)
-                c.drawString(base_x, y, f"{r['no']}.")
+            c.setFont(DEFAULT_FONT, 11)
+            c.drawString(base_x, y, f"{r['no']}.")
 
-                qx = base_x + 10*mm
-                c.drawString(qx, y, r['q'])
+            qx = base_x + 10*mm
+            c.drawString(qx, y, r['q'])
 
-                if mode_label == "q":
-                    # underline
-                    lx1 = qx + 45*mm
-                    lx2 = base_x + col_w - 5*mm
-                    c.setLineWidth(0.5)
-                    c.line(lx1, y - 3, lx2, y - 3)
-                else:
-                    ax = qx + 60*mm
-                    max_answer_width = col_w - (ax - base_x) - 5*mm
-                    
-                    answer = r['a']
-                    
-                    # ① まず最大フォントサイズで折り返し
-                    font_size = 11
-                    lines = wrap_text(answer, DEFAULT_FONT, font_size, max_answer_width)
-                    
-                    # ② 行数に応じてフォントサイズを調整（圧縮）
-                    if len(lines) >= 3:
-                        font_size = 9
-                    elif len(lines) == 2:
-                        font_size = 10
-                    else:
-                        font_size = 11
-                    
-                    # 再度折り返し（小さくなったフォントで）
-                    lines = wrap_text(answer, DEFAULT_FONT, font_size, max_answer_width)
-                    
-                    # ③ 行間設定（可変）
-                    line_gap = 3 if len(lines) <= 2 else 2
-                    
-                    # ④ 描画
-                    c.setFont(DEFAULT_FONT, font_size)
-                    for i, text_line in enumerate(lines):
-                        yy = y - (i * (font_size + line_gap))
-                        c.drawString(ax, yy, text_line)
+            if mode_label == "q":
+                lx1 = qx + 45*mm
+                lx2 = base_x + col_w - 5*mm
+                c.setLineWidth(0.5)
+                c.line(lx1, y - 3, lx2, y - 3)
+            else:
+                ax = qx + 60*mm
+                max_w = col_w - (ax - base_x) - 5*mm
+                max_h = line_h - 3
 
+                draw_answer_fitted(
+                    c,
+                    r['a'],
+                    DEFAULT_FONT,
+                    ax,
+                    y,
+                    max_w,
+                    max_h
+                )
 
+    draw_col(left_x, 0)
+    draw_col(right_x, 20)
 
-        draw_col(left_x, 0)
-        draw_col(right_x, 20)
-        c.showPage()
-
-    # 1ページ目：問題
-    draw_page("q")
-
-    # 2ページ目：解答
-    draw_page("a")
-
+    c.showPage()
     c.save()
     return filename
 
-# ===== Routes ======
+
+# ===== PDF結合 =====
+def merge_two_pdfs(qpdf, apdf):
+    final = TMPDIR / f"{uuid.uuid4().hex}_final.pdf"
+    merger = PdfMerger()
+    merger.append(str(qpdf))
+    merger.append(str(apdf))
+    merger.write(str(final))
+    merger.close()
+    return final
+
+
+# ===== Routes =====
 @app.route("/")
 def index():
     wb = load_workbook(str(EXCEL_PATH), read_only=True)
     return render_template_string(INDEX_HTML, sheets=wb.sheetnames)
+
 
 @app.route("/generate", methods=["POST"])
 def generate():
@@ -358,12 +297,15 @@ def generate():
     rows = load_sheet_rows(EXCEL_PATH, sheet)
     items = pick40(rows, start, end)
 
-    # 2ページPDFを生成
-    final_pdf = make_two_page_pdf(items, sheet, start, end)
+    qpdf = make_single_pdf(items, sheet, start, end, "q")
+    apdf = make_single_pdf(items, sheet, start, end, "a")
+
+    final_pdf = merge_two_pdfs(qpdf, apdf)
 
     return jsonify({
         "pdf_url": f"/pdf/{final_pdf.name}"
     })
+
 
 @app.route("/pdf/<filename>")
 def serve_pdf(filename):
@@ -374,12 +316,7 @@ def serve_pdf(filename):
     resp.headers["Content-Disposition"] = 'inline; filename="test.pdf"'
     return resp
 
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 3710))
     app.run(host="0.0.0.0", port=port)
-
-
-
-
-
-
