@@ -179,6 +179,27 @@ async function doGenerate(e){
 </html>
 """
 
+def wrap_text(text, font, size, max_width):
+    """
+    指定フォント・サイズで max_width に収まるように折り返す
+    """
+    words = text.split(" ")
+    lines = []
+    current = ""
+
+    for w in words:
+        test = (current + " " + w).strip()
+        if stringWidth(test, font, size) <= max_width:
+            current = test
+        else:
+            if current:
+                lines.append(current)
+            current = w
+    if current:
+        lines.append(current)
+
+    return lines
+
 def fit_font_size(text, font, max_width, max_size=11, min_size=8):
     """
     文字が max_width に収まるフォントサイズを返す
@@ -278,15 +299,34 @@ def make_two_page_pdf(items, sheet, start, end):
                     c.line(lx1, y - 3, lx2, y - 3)
                 else:
                     ax = qx + 60*mm
-                    max_answer_width = col_w - (ax - base_x) - 5*mm  # 右端までの距離
+                    max_answer_width = col_w - (ax - base_x) - 5*mm
                     
                     answer = r['a']
                     
-                    # フォントサイズを自動調整
-                    font_size = fit_font_size(answer, DEFAULT_FONT, max_answer_width)
+                    # ① まず最大フォントサイズで折り返し
+                    font_size = 11
+                    lines = wrap_text(answer, DEFAULT_FONT, font_size, max_answer_width)
                     
+                    # ② 行数に応じてフォントサイズを調整（圧縮）
+                    if len(lines) >= 3:
+                        font_size = 9
+                    elif len(lines) == 2:
+                        font_size = 10
+                    else:
+                        font_size = 11
+                    
+                    # 再度折り返し（小さくなったフォントで）
+                    lines = wrap_text(answer, DEFAULT_FONT, font_size, max_answer_width)
+                    
+                    # ③ 行間設定（可変）
+                    line_gap = 3 if len(lines) <= 2 else 2
+                    
+                    # ④ 描画
                     c.setFont(DEFAULT_FONT, font_size)
-                    c.drawString(ax, y, answer)
+                    for i, text_line in enumerate(lines):
+                        yy = y - (i * (font_size + line_gap))
+                        c.drawString(ax, yy, text_line)
+
 
 
         draw_col(left_x, 0)
@@ -337,6 +377,7 @@ def serve_pdf(filename):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 3710))
     app.run(host="0.0.0.0", port=port)
+
 
 
 
