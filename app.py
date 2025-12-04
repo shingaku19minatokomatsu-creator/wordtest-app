@@ -36,18 +36,80 @@ INDEX_HTML = """
 <head>
 <meta charset="utf-8">
 <title>単語テスト</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <style>
-body{font-family: Arial, sans-serif; max-width:920px; margin:18px auto; padding:8px;}
-label{display:inline-block; width:120px;}
-input,select,button{padding:6px; font-size:15px;}
-.row{margin:10px 0;}
-.note{color:#666; font-size:13px;}
+body {
+    font-family: Arial, sans-serif;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 18px;
+    font-size: 18px;
+}
+
+h2 {
+    font-size: 26px;
+    margin-bottom: 10px;
+}
+
+label {
+    display: block;
+    font-size: 18px;
+    margin-bottom: 4px;
+}
+
+input, select, button {
+    padding: 12px;
+    font-size: 18px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.row {
+    margin: 15px 0;
+}
+
+button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 20px;
+    padding: 14px;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #0056c7;
+}
+
+.note {
+    color: #666;
+    font-size: 15px;
+    margin-bottom: 10px;
+}
+
+/* スマホ用 */
+@media (max-width: 600px) {
+    body {
+        padding: 14px;
+        font-size: 17px;
+    }
+    input, select, button {
+        font-size: 18px;
+        padding: 14px;
+    }
+    h2 {
+        font-size: 24px;
+    }
+}
 </style>
 </head>
+
 <body>
 
 <h2>単語テスト</h2>
-<div class="note">※「表示」で test.pdf（問題→解答）が1つのPDFで開きます。</div>
+<div class="note">※「表示」を押すと test.pdf（問題→解答）が開きます。</div>
 
 <form id="form" onsubmit="return doGenerate(event)">
   <div class="row">
@@ -59,15 +121,25 @@ input,select,button{padding:6px; font-size:15px;}
     </select>
   </div>
 
-  <div class="row"><label>開始番号</label><input id="start" required></div>
-  <div class="row"><label>終了番号</label><input id="end" required></div>
+  <div class="row">
+    <label>開始番号</label>
+    <input id="start" required>
+  </div>
 
-  <div class="row"><button type="submit">表示</button></div>
+  <div class="row">
+    <label>終了番号</label>
+    <input id="end" required>
+  </div>
+
+  <div class="row">
+    <button type="submit">表示</button>
+  </div>
 </form>
 
 <script>
 async function doGenerate(e){
   e.preventDefault();
+
   const sheet = document.getElementById('sheet').value;
   const start = document.getElementById('start').value;
   const end   = document.getElementById('end').value;
@@ -98,12 +170,15 @@ async function doGenerate(e){
   }catch(err){
     alert("通信エラー: " + err);
   }
+
   return false;
 }
 </script>
+
 </body>
 </html>
 """
+
 
 
 
@@ -342,4 +417,5 @@ def serve_pdf(filename):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 3710))
     app.run(host="0.0.0.0", port=port)
+
 
