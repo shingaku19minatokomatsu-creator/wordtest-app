@@ -1,6 +1,5 @@
 # app.py
-# A方式：問題PDFと解答PDFを1つのPDFに結合して test.pdf を表示する
-# ----------------------------------------------
+# A方式：1つの PDF に「問題ページ → 解答ページ」の2ページ構成で test.pdf を生成
 
 import random
 import uuid
@@ -13,12 +12,12 @@ from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.units import mm
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.cidfonts import UnicodeCIDFont
+import os
 
 # ====== 設定 ======
 EXCEL_PATH = Path("英単語テスト.xlsx")
 TMPDIR = Path(gettempdir()) / "word_a_mode"
 TMPDIR.mkdir(parents=True, exist_ok=True)
-PORT = 3710
 
 app = Flask(__name__)
 
@@ -46,8 +45,8 @@ input,select,button{padding:6px; font-size:15px;}
 </head>
 <body>
 
-<h2>単語テスト PDF 生成（問題→解答 1つのPDF）</h2>
-<div class="note">※「表示」を押すと test.pdf（2ページ構成）が開きます。</div>
+<h2>単語テスト PDF 生成（A方式：1つのPDF）</h2>
+<div class="note">※「表示」で test.pdf（問題→解答）が1つのPDFで開きます。</div>
 
 <form id="form" onsubmit="return doGenerate(event)">
   <div class="row">
@@ -68,7 +67,6 @@ input,select,button{padding:6px; font-size:15px;}
 <script>
 async function doGenerate(e){
   e.preventDefault();
-
   const sheet = document.getElementById('sheet').value;
   const start = document.getElementById('start').value;
   const end   = document.getElementById('end').value;
@@ -79,7 +77,7 @@ async function doGenerate(e){
   }
 
   try {
-    const win = window.open("about:blank", "_blank");  // ★1タブのみ → ブロックされない
+    const win = window.open("about:blank", "_blank");
 
     const res = await fetch("/generate", {
       method: "POST",
@@ -99,7 +97,6 @@ async function doGenerate(e){
   }catch(err){
     alert("通信エラー: " + err);
   }
-
   return false;
 }
 </script>
@@ -118,7 +115,7 @@ def load_sheet_rows(path, sheet):
             continue
         try:
             num = int(float(a))
-        except Exception:
+        except:
             num = None
         rows.append({
             "num": num,
@@ -138,13 +135,9 @@ def pick40(rows, start, end):
         rr["no"] = i + 1
     return r
 
-# ===== 単独PDFページ生成 =====
-def make_single_pdf(items, sheet, start, end, mode_label):
-    """
-    mode_label: "q" または "a"
-    q → 問題ページ, a → 解答ページ
-    """
-    filename = TMPDIR / f"{uuid.uuid4().hex}_{mode_label}.pdf"
+# ===== 1つのPDFに「問題→解答」2ページ作成 ======
+def make_two_page_pdf(items, sheet, start, end):
+    filename = TMPDIR / f"{uuid.uuid4().hex}_final.pdf"
     c = canvas.Canvas(str(filename), pagesize=landscape(A4))
     PW, PH = landscape(A4)
 
@@ -156,55 +149,62 @@ def make_single_pdf(items, sheet, start, end, mode_label):
     left_x = margin
     right_x = left_x + col_w + col_gap
 
-    # header
-    title_y = PH - 15*mm
-    words_y = title_y - 8*mm
-    start_y = words_y - 10*mm
+    def draw_page(mode_label):
+        # header
+        title_y = PH - 15*mm
+        words_y = title_y - 8*mm
+        start_y = words_y - 10*mm
 
-    c.setFont(DEFAULT_FONT, 16)
-    c.drawString(left_x, title_y, "shingaku19minato test")
+        c.setFont(DEFAULT_FONT, 16)
+        c.drawString(left_x, title_y, "shingaku19minato test")
 
-    c.setFont(DEFAULT_FONT, 12)
-    c.drawString(left_x, words_y, f"words  {sheet}（{start}～{end}）")
+        c.setFont(DEFAULT_FONT, 12)
+        c.drawString(left_x, words_y, f"words  {sheet}（{start}～{end}）")
 
-    c.setFont(DEFAULT_FONT, 11)
-    c.drawString(PW - margin - 170, title_y, "name：________________")
-    c.drawString(PW - margin - 170, title_y - 8*mm, "score：________________")
+        c.setFont(DEFAULT_FONT, 11)
+        c.drawString(PW - margin - 170, title_y, "name：________________")
+        c.drawString(PW - margin - 170, title_y - 8*mm, "score：________________")
 
-    # body
-    rows_per_col = 20
-    bottom = 15*mm
-    avail_h = start_y - bottom
-    line_h = avail_h / 22
-    if line_h > 13*mm: line_h = 13*mm
-    if line_h < 8*mm:  line_h = 9*mm
+        # body
+        rows_per_col = 20
+        bottom = 15*mm
+        avail_h = start_y - bottom
+        line_h = avail_h / 22
+        if line_h > 13*mm: line_h = 13*mm
+        if line_h < 8*mm:  line_h = 9*mm
 
-    def draw_col(base_x, idx0):
-        for i in range(rows_per_col):
-            if idx0+i >= len(items): break
-            r = items[idx0+i]
-            y = start_y - i*line_h
+        def draw_col(base_x, idx0):
+            for i in range(rows_per_col):
+                if idx0+i >= len(items): break
+                r = items[idx0+i]
+                y = start_y - i*line_h
 
-            c.setFont(DEFAULT_FONT, 11)
-            c.drawString(base_x, y, f"{r['no']}.")
+                c.setFont(DEFAULT_FONT, 11)
+                c.drawString(base_x, y, f"{r['no']}.")
 
-            qx = base_x + 10*mm
-            c.drawString(qx, y, r['q'])
+                qx = base_x + 10*mm
+                c.drawString(qx, y, r['q'])
 
-            if mode_label == "q":
-                # underline for answer
-                lx1 = qx + 45*mm
-                lx2 = base_x + col_w - 5*mm
-                c.setLineWidth(0.5)
-                c.line(lx1, y - 3, lx2, y - 3)
-            else:
-                ax = qx + 60*mm
-                c.drawString(ax, y, r['a'])
+                if mode_label == "q":
+                    # underline
+                    lx1 = qx + 45*mm
+                    lx2 = base_x + col_w - 5*mm
+                    c.setLineWidth(0.5)
+                    c.line(lx1, y - 3, lx2, y - 3)
+                else:
+                    ax = qx + 60*mm
+                    c.drawString(ax, y, r['a'])
 
-    draw_col(left_x, 0)
-    draw_col(right_x, 20)
+        draw_col(left_x, 0)
+        draw_col(right_x, 20)
+        c.showPage()
 
-    c.showPage()
+    # 1ページ目：問題
+    draw_page("q")
+
+    # 2ページ目：解答
+    draw_page("a")
+
     c.save()
     return filename
 
@@ -224,10 +224,8 @@ def generate():
     rows = load_sheet_rows(EXCEL_PATH, sheet)
     items = pick40(rows, start, end)
 
-    # 1ページ目（問題）
-    qpdf = make_single_pdf(items, sheet, start, end, "q")
-    # 2ページ目（解答）
-    apdf = make_single_pdf(items, sheet, start, end, "a")
+    # 2ページPDFを生成
+    final_pdf = make_two_page_pdf(items, sheet, start, end)
 
     return jsonify({
         "pdf_url": f"/pdf/{final_pdf.name}"
@@ -242,11 +240,6 @@ def serve_pdf(filename):
     resp.headers["Content-Disposition"] = 'inline; filename="test.pdf"'
     return resp
 
-import os
-
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 3710))
     app.run(host="0.0.0.0", port=port)
-
-
-
