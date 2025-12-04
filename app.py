@@ -50,7 +50,7 @@ input,select,button{padding:6px; font-size:15px;}
 
 <form id="form" onsubmit="return doGenerate(event)">
   <div class="row">
-    <label>単語帳（シート）</label>
+    <label>単語帳</label>
     <select id="sheet">
       {% for s in sheets %}
       <option value="{{s}}">{{s}}</option>
@@ -243,5 +243,6 @@ def serve_pdf(filename):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 3710))
     app.run(host="0.0.0.0", port=port)
+
 
 
