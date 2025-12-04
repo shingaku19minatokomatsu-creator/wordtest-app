@@ -34,7 +34,7 @@ INDEX_HTML = """
 <html>
 <head>
 <meta charset="utf-8">
-<title>単語テスト生成（A方式）</title>
+<title>単語テスト生成</title>
 <style>
 body{font-family: Arial, sans-serif; max-width:920px; margin:18px auto; padding:8px;}
 label{display:inline-block; width:120px;}
@@ -243,3 +243,4 @@ def serve_pdf(filename):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 3710))
     app.run(host="0.0.0.0", port=port)
+
