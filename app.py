@@ -179,6 +179,54 @@ async function doGenerate(e){
 </html>
 """
 
+def draw_text_fitted(c, text, font, base_x, base_y, max_width, max_height,
+                     max_font=11, min_font=6):
+    """
+    テキストを「縮小 → 折り返し」の優先度で
+    指定枠に絶対収める（問題・解答両方に使用）
+    """
+
+    if not text:
+        return
+
+    font_size = max_font
+
+    while font_size >= min_font:
+        # 行間は視認性のためフォント比
+        line_gap = max(1, int(font_size * 0.20))
+
+        # 折り返し処理
+        words = text.split(" ")
+        lines = []
+        current = ""
+
+        for w in words:
+            test = (current + " " + w).strip()
+            if stringWidth(test, font, font_size) <= max_width:
+                current = test
+            else:
+                if current:
+                    lines.append(current)
+                current = w
+        if current:
+            lines.append(current)
+
+        total_h = len(lines) * font_size + (len(lines) - 1) * line_gap
+
+        if total_h <= max_height:
+            # ✔ 入る → 描画して確定
+            c.setFont(font, font_size)
+            y = base_y
+            for ln in lines:
+                c.drawString(base_x, y, ln)
+                y -= (font_size + line_gap)
+            return
+
+        font_size -= 1
+
+    # 非常事態：6ptでも無理 → 省略表示
+    c.setFont(font, min_font)
+    c.drawString(base_x, base_y, text[:20] + "...")
 
 
 
@@ -341,8 +389,21 @@ def make_two_page_pdf(items, sheet, start, end):
                 c.setFont(DEFAULT_FONT, 11)
                 c.drawString(base_x, y, f"{r['no']}.")
 
+                # ▼ 問題（折り返し＋縮小）
                 qx = base_x + 10*mm
-                c.drawString(qx, y, r['q'])
+                max_q_width = col_w - 60*mm  # 解答スペースを考慮した幅
+                max_h = line_h - 3           # 1行の高さ分に収める
+                
+                draw_text_fitted(
+                    c,
+                    r['q'],          # ← 問題文
+                    DEFAULT_FONT,
+                    qx,
+                    y,
+                    max_q_width,
+                    max_h
+                )
+
 
                 if mode_label == "q":
                     # underline
@@ -351,13 +412,12 @@ def make_two_page_pdf(items, sheet, start, end):
                     c.setLineWidth(0.5)
                     c.line(lx1, y - 3, lx2, y - 3)
                 else:
+                    # ▼ 解答
                     ax = qx + 60*mm
                     max_answer_width = col_w - (ax - base_x) - 5*mm
-                
-                    # 1行ぶんの高さ
-                    max_h = line_h - 3  # 少し余白をつけておく
-                
-                    draw_answer_fitted(
+                    max_h = line_h - 3
+                    
+                    draw_text_fitted(
                         c,
                         r['a'],
                         DEFAULT_FONT,
@@ -366,6 +426,7 @@ def make_two_page_pdf(items, sheet, start, end):
                         max_answer_width,
                         max_h
                     )
+
 
 
 
@@ -417,5 +478,6 @@ def serve_pdf(filename):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 3710))
     app.run(host="0.0.0.0", port=port)
+
 
 
