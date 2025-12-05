@@ -223,8 +223,8 @@ def draw_text_fitted(c, text, font, base_x, base_y, max_width, max_height):
         return
 
     # ▼ 最大 → 最小フォントサイズ
-    max_font = 11
-    min_font = 6
+    max_font = 10
+    min_font = 4
 
     # 最大3行
     max_lines = 3
@@ -283,9 +283,9 @@ def draw_answer_fitted(c, text, font, base_x, base_y, max_width, max_height):
     """
 
     # ▼ フィットさせたい最大フォントサイズ
-    font_size = 11
+    font_size = 10
 
-    while font_size >= 5:  # 最低 5pt まで縮小
+    while font_size >= 4:  # 最低 5pt まで縮小
         # 行間はフォントサイズに応じて可変
         line_gap = max(1, int(font_size * 0.2))
 
@@ -432,47 +432,45 @@ def make_two_page_pdf(items, sheet, start, end):
                 if idx0+i >= len(items): break
                 r = items[idx0+i]
         
-                # ← これだけで縦位置バッチリ揃う
                 y = start_y - i * line_h
         
                 # 番号
                 c.setFont(DEFAULT_FONT, 11)
                 c.drawString(base_x, y, f"{r['no']}.")
-                        
-                # ▼ 問題（折り返し縮小）
+        
+                # ▼ 幅設定（安全マージン）
+                question_width = col_w * 0.50    # 問題の横幅
+                answer_width   = col_w * 0.40    # 解答の横幅
+                margin_between = col_w * 0.10    # 問題〜解答の間隔
+        
                 qx = base_x + 10*mm
-                
-                question_width = col_w * 0.55
-                answer_width   = col_w * 0.45
-                
-                max_q_width = question_width
-                
-                # ★★★ 高さを「3行分」確保する
+        
+                # ▼ 高さを3行分確保
                 max_h = line_h * 2.8
-                
-                draw_text_fitted(c, r['q'], DEFAULT_FONT, qx, y, max_q_width, max_h)
-                
-                
+        
+                # ▼ 問題
+                draw_text_fitted(
+                    c, r['q'], DEFAULT_FONT,
+                    qx, y,
+                    question_width,
+                    max_h
+                )
+        
                 if mode_label == "q":
-                    lx1 = qx + max_q_width + 2*mm
+                    lx1 = qx + question_width + 2*mm
                     lx2 = base_x + col_w - 5*mm
                     c.setLineWidth(0.5)
                     c.line(lx1, y - 3, lx2, y - 3)
                 else:
-                    ax = qx + question_width + 5*mm
-                
-                    max_answer_width = answer_width - 5*mm
-                
-                    # ★★★ 解答側にも同じ高さを与える
+                    # ▼ 解答（右に寄せる）
+                    ax = base_x + question_width + margin_between
                     draw_text_fitted(
-                        c,
-                        r['a'],
-                        DEFAULT_FONT,
-                        ax,
-                        y,
-                        max_answer_width,
-                        max_h     # ここだけが超重要！
+                        c, r['a'], DEFAULT_FONT,
+                        ax, y,
+                        answer_width,
+                        max_h
                     )
+
 
 
         
@@ -542,6 +540,7 @@ def serve_pdf(filename):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 3710))
     app.run(host="0.0.0.0", port=port)
+
 
 
 
