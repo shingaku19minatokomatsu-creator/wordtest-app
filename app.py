@@ -16,6 +16,7 @@ import os
 from reportlab.pdfbase.pdfmetrics import stringWidth
 from flask import request, abort
 from reportlab.pdfbase.ttfonts import TTFont
+from tempfile import gettempdir
 
 ALLOWED_IP_PREFIX = "192.168.0."
 
@@ -32,10 +33,19 @@ def limit_local_only():
         
 # ====== 設定 ======
 EXCEL_PATH = Path("英単語テスト.xlsx")
-TMPDIR = Path(gettempdir()) / "word_a_mode"
-TMPDIR.mkdir(parents=True, exist_ok=True)
+
+# 安定した PDF 保存フォルダ
+try:
+    TMPDIR = Path(gettempdir()) / "word_a_mode"
+    TMPDIR.mkdir(parents=True, exist_ok=True)
+except Exception:
+    TMPDIR = Path("/tmp/word_a_mode")
+    TMPDIR.mkdir(parents=True, exist_ok=True)
+
+print("📁 PDF 保存先:", TMPDIR)
 
 app = Flask(__name__)
+
 
 # ====== 日本語フォント（同梱） ======
 FONT_PATH = Path("fonts/ipaexm.ttf")
@@ -386,69 +396,66 @@ def make_two_page_pdf(items, sheet, start, end):
     left_x = margin
     right_x = left_x + col_w + col_gap
 
-def draw_col(base_x, idx0):
-    for i in range(rows_per_col):
-        if idx0+i >= len(items): break
-        r = items[idx0+i]
-        y = start_y - i*line_h
+    # ====== ページ描画 ======
+    def draw_page(mode_label):
+        title_y = PH - 15*mm
+        words_y = title_y - 8*mm
 
-        # 番号
-        c.setFont(DEFAULT_FONT, 11)
-        c.drawString(base_x, y, f"{r['no']}.")
+        c.setFont(DEFAULT_FONT, 16)
+        c.drawString(left_x, title_y, "shingaku19minato test")
 
-        # ▼ 問題（折り返し＋縮小）
-        qx = base_x + 10*mm
-        max_q_width = col_w - 45*mm     # ★ 修正
-        max_h = line_h - 3              # 1行分に収める
-        
-        draw_text_fitted(
-            c,
-            r['q'],
-            DEFAULT_FONT,
-            qx,
-            y,
-            max_q_width,
-            max_h
-        )
+        c.setFont(DEFAULT_FONT, 12)
+        c.drawString(left_x, words_y, f"words  {sheet}（{start}～{end}）")
 
-        if mode_label == "q":
-            # underline
-            lx1 = qx + max_q_width + 2*mm
-            lx2 = base_x + col_w - 5*mm
-            c.setLineWidth(0.5)
-            c.line(lx1, y - 3, lx2, y - 3)
-        else:
-            # ▼ 解答（折り返し縮小）
-            ax = qx + 45*mm              # ★ 修正
-            max_answer_width = col_w - (ax - base_x) - 5*mm
-            max_h = line_h - 3
-            
-            draw_text_fitted(
-                c,
-                r['a'],
-                DEFAULT_FONT,
-                ax,
-                y,
-                max_answer_width,
-                max_h
-            )
+        rows_per_col = 20
+        bottom = 15*mm
+        avail_h = words_y - 15*mm - bottom
+        line_h = avail_h / 22
+        if line_h > 13*mm: line_h = 13*mm
+        if line_h < 8*mm:  line_h = 9*mm
 
+        # ===== 20行の表を2列に描く =====
+        def draw_col(base_x, idx0):
+            for i in range(rows_per_col):
+                if idx0+i >= len(items): break
+                r = items[idx0+i]
+                y = words_y - 15*mm - i*line_h + avail_h
 
+                # 番号
+                c.setFont(DEFAULT_FONT, 11)
+                c.drawString(base_x, y, f"{r['no']}.")
 
+                # ▼ 問題（折り返し縮小）
+                qx = base_x + 10*mm
+                max_q_width = col_w - 45*mm
+                max_h = line_h - 3
+                draw_text_fitted(c, r['q'], DEFAULT_FONT, qx, y, max_q_width, max_h)
 
+                if mode_label == "q":
+                    # 下線
+                    lx1 = qx + max_q_width + 2*mm
+                    lx2 = base_x + col_w - 5*mm
+                    c.setLineWidth(0.5)
+                    c.line(lx1, y - 3, lx2, y - 3)
+                else:
+                    # ▼ 解答（折り返し縮小）
+                    ax = qx + 45*mm
+                    max_answer_width = col_w - (ax - base_x) - 5*mm
+                    draw_text_fitted(c, r['a'], DEFAULT_FONT, ax, y, max_answer_width, max_h)
 
         draw_col(left_x, 0)
         draw_col(right_x, 20)
         c.showPage()
 
-    # 1ページ目：問題
+    # ===== 1ページ目：問題 =====
     draw_page("q")
 
-    # 2ページ目：解答
+    # ===== 2ページ目：解答 =====
     draw_page("a")
 
     c.save()
     return filename
+
 
 # ===== Routes ======
 @app.route("/")
@@ -499,6 +506,7 @@ def serve_pdf(filename):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 3710))
     app.run(host="0.0.0.0", port=port)
+
 
 
 
