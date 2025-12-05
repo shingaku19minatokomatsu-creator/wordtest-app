@@ -417,8 +417,9 @@ def make_two_page_pdf(items, sheet, start, end):
         bottom = 12*mm
         avail_h = start_y - bottom
         line_h = avail_h / (rows_per_col - 1)
-        if line_h > 14*mm: line_h = 14*mm
-        if line_h < 11*mm: line_h = 11*mm
+        if line_h > 12*mm: line_h = 12*mm
+        if line_h < 9*mm:  line_h = 9*mm
+
 
         # ===== 20行の表を2列に描く =====
         def draw_col(base_x, idx0):
@@ -515,6 +516,7 @@ def serve_pdf(filename):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 3710))
     app.run(host="0.0.0.0", port=port)
+
 
 
 
