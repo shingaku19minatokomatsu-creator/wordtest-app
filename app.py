@@ -405,13 +405,18 @@ def make_two_page_pdf(items, sheet, start, end):
     def draw_page(mode_label):
         title_y  = PH - 10*mm
         words_y  = title_y - 10*mm
-        start_y  = words_y - 16*mm
+        start_y  = words_y - 14*mm
 
         c.setFont(DEFAULT_FONT, 16)
         c.drawString(left_x, title_y, "shingaku19minato test")
-
+        
         c.setFont(DEFAULT_FONT, 12)
         c.drawString(left_x, words_y, f"words  {sheet}（{start}～{end}）")
+        
+        # ←★ これを忘れずに入れる
+        c.setFont(DEFAULT_FONT, 12)
+        c.drawString(PW - margin - 170, title_y, "name：________________")
+        c.drawString(PW - margin - 170, title_y - 8*mm, "score：________________")
 
         rows_per_col = 20
         bottom = 12*mm
@@ -516,6 +521,7 @@ def serve_pdf(filename):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 3710))
     app.run(host="0.0.0.0", port=port)
+
 
 
 
