@@ -416,7 +416,7 @@ def make_two_page_pdf(items, sheet, start, end):
         rows_per_col = 20
         bottom = 12*mm
         avail_h = start_y - bottom
-        line_h = avail_h / rows_per_col
+        line_h = avail_h / (rows_per_col - 1)
         if line_h > 14*mm: line_h = 14*mm
         if line_h < 11*mm: line_h = 11*mm
 
@@ -515,6 +515,7 @@ def serve_pdf(filename):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 3710))
     app.run(host="0.0.0.0", port=port)
+
 
 
 
