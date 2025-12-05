@@ -14,7 +14,16 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.cidfonts import UnicodeCIDFont
 import os
 from reportlab.pdfbase.pdfmetrics import stringWidth
+from flask import request, abort
 
+ALLOWED_IP_PREFIX = "192.168.0."
+
+@app.before_request
+def limit_local_use():
+    ip = request.remote_addr or ""
+    if not ip.startswith(ALLOWED_IP_PREFIX):
+        abort(403)  # Forbidden（外部拒否）
+        
 # ====== 設定 ======
 EXCEL_PATH = Path("英単語テスト.xlsx")
 TMPDIR = Path(gettempdir()) / "word_a_mode"
@@ -179,54 +188,65 @@ async function doGenerate(e){
 </html>
 """
 
-def draw_text_fitted(c, text, font, base_x, base_y, max_width, max_height,
-                     max_font=11, min_font=6):
+def draw_text_fitted(c, text, font, base_x, base_y, max_width, max_height):
     """
-    テキストを「縮小 → 折り返し」の優先度で
-    指定枠に絶対収める（問題・解答両方に使用）
+    3行まで折り返し＋フォント縮小して強制フィット
     """
 
     if not text:
         return
 
-    font_size = max_font
+    # ▼ 最大 → 最小フォントサイズ
+    max_font = 11
+    min_font = 6
 
-    while font_size >= min_font:
-        # 行間は視認性のためフォント比
-        line_gap = max(1, int(font_size * 0.20))
+    # 最大3行
+    max_lines = 3
 
-        # 折り返し処理
+    # フォント調整ループ
+    for size in range(max_font, min_font - 1, -1):
+        line_gap = max(1, int(size * 0.22))
+
+        # 折り返し
         words = text.split(" ")
         lines = []
         current = ""
 
         for w in words:
             test = (current + " " + w).strip()
-            if stringWidth(test, font, font_size) <= max_width:
+            if stringWidth(test, font, size) <= max_width:
                 current = test
             else:
                 if current:
                     lines.append(current)
                 current = w
-        if current:
+                # 3行超え→省略
+                if len(lines) >= max_lines:
+                    current = ""
+                    break
+
+        if current and len(lines) < max_lines:
             lines.append(current)
 
-        total_h = len(lines) * font_size + (len(lines) - 1) * line_gap
+        # 行数が0は表示しない
+        if not lines:
+            continue
+
+        total_h = len(lines) * size + (len(lines) - 1) * line_gap
 
         if total_h <= max_height:
-            # ✔ 入る → 描画して確定
-            c.setFont(font, font_size)
+            # ✔ 収まる → 描画
+            c.setFont(font, size)
             y = base_y
             for ln in lines:
+                # 文字描画
                 c.drawString(base_x, y, ln)
-                y -= (font_size + line_gap)
+                y -= (size + line_gap)
             return
 
-        font_size -= 1
-
-    # 非常事態：6ptでも無理 → 省略表示
+    # ❗ 超非常手段 → 最小フォントで省略せず表示
     c.setFont(font, min_font)
-    c.drawString(base_x, base_y, text[:20] + "...")
+    c.drawString(base_x, base_y, text[:50] + "...")
 
 
 
@@ -356,76 +376,53 @@ def make_two_page_pdf(items, sheet, start, end):
     left_x = margin
     right_x = left_x + col_w + col_gap
 
-    def draw_page(mode_label):
-        # header
-        title_y = PH - 15*mm
-        words_y = title_y - 8*mm
-        start_y = words_y - 10*mm
+def draw_col(base_x, idx0):
+    for i in range(rows_per_col):
+        if idx0+i >= len(items): break
+        r = items[idx0+i]
+        y = start_y - i*line_h
 
-        c.setFont(DEFAULT_FONT, 16)
-        c.drawString(left_x, title_y, "shingaku19minato test")
-
-        c.setFont(DEFAULT_FONT, 12)
-        c.drawString(left_x, words_y, f"words  {sheet}（{start}～{end}）")
-
+        # 番号
         c.setFont(DEFAULT_FONT, 11)
-        c.drawString(PW - margin - 170, title_y, "name：________________")
-        c.drawString(PW - margin - 170, title_y - 8*mm, "score：________________")
+        c.drawString(base_x, y, f"{r['no']}.")
 
-        # body
-        rows_per_col = 20
-        bottom = 15*mm
-        avail_h = start_y - bottom
-        line_h = avail_h / 22
-        if line_h > 13*mm: line_h = 13*mm
-        if line_h < 8*mm:  line_h = 9*mm
+        # ▼ 問題（折り返し＋縮小）
+        qx = base_x + 10*mm
+        max_q_width = col_w - 45*mm     # ★ 修正
+        max_h = line_h - 3              # 1行分に収める
+        
+        draw_text_fitted(
+            c,
+            r['q'],
+            DEFAULT_FONT,
+            qx,
+            y,
+            max_q_width,
+            max_h
+        )
 
-        def draw_col(base_x, idx0):
-            for i in range(rows_per_col):
-                if idx0+i >= len(items): break
-                r = items[idx0+i]
-                y = start_y - i*line_h
+        if mode_label == "q":
+            # underline
+            lx1 = qx + max_q_width + 2*mm
+            lx2 = base_x + col_w - 5*mm
+            c.setLineWidth(0.5)
+            c.line(lx1, y - 3, lx2, y - 3)
+        else:
+            # ▼ 解答（折り返し縮小）
+            ax = qx + 45*mm              # ★ 修正
+            max_answer_width = col_w - (ax - base_x) - 5*mm
+            max_h = line_h - 3
+            
+            draw_text_fitted(
+                c,
+                r['a'],
+                DEFAULT_FONT,
+                ax,
+                y,
+                max_answer_width,
+                max_h
+            )
 
-                c.setFont(DEFAULT_FONT, 11)
-                c.drawString(base_x, y, f"{r['no']}.")
-
-                # ▼ 問題（折り返し＋縮小）
-                qx = base_x + 10*mm
-                max_q_width = col_w - 60*mm  # 解答スペースを考慮した幅
-                max_h = line_h - 3           # 1行の高さ分に収める
-                
-                draw_text_fitted(
-                    c,
-                    r['q'],          # ← 問題文
-                    DEFAULT_FONT,
-                    qx,
-                    y,
-                    max_q_width,
-                    max_h
-                )
-
-
-                if mode_label == "q":
-                    # underline
-                    lx1 = qx + 45*mm
-                    lx2 = base_x + col_w - 5*mm
-                    c.setLineWidth(0.5)
-                    c.line(lx1, y - 3, lx2, y - 3)
-                else:
-                    # ▼ 解答
-                    ax = qx + 60*mm
-                    max_answer_width = col_w - (ax - base_x) - 5*mm
-                    max_h = line_h - 3
-                    
-                    draw_text_fitted(
-                        c,
-                        r['a'],
-                        DEFAULT_FONT,
-                        ax,
-                        y,
-                        max_answer_width,
-                        max_h
-                    )
 
 
 
@@ -478,6 +475,7 @@ def serve_pdf(filename):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 3710))
     app.run(host="0.0.0.0", port=port)
+
 
 
 
