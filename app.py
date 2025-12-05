@@ -215,25 +215,16 @@ async function doGenerate(e){
 """
 
 def draw_text_fitted(c, text, font, base_x, base_y, max_width, max_height):
-    """
-    3行まで折り返し＋フォント縮小して強制フィット
-    """
-
     if not text:
         return
 
-    # ▼ 最大 → 最小フォントサイズ
     max_font = 10
     min_font = 4
+    max_lines = 2  # ⭐ 最大行数を2に制限
 
-    # 最大3行
-    max_lines = 3
-
-    # フォント調整ループ
     for size in range(max_font, min_font - 1, -1):
-        line_gap = max(1, int(size * 0.22))
+        line_gap = max(1, int(size * 0.2))
 
-        # 折り返し
         words = text.split(" ")
         lines = []
         current = ""
@@ -246,7 +237,7 @@ def draw_text_fitted(c, text, font, base_x, base_y, max_width, max_height):
                 if current:
                     lines.append(current)
                 current = w
-                # 3行超え→省略
+
                 if len(lines) >= max_lines:
                     current = ""
                     break
@@ -254,74 +245,64 @@ def draw_text_fitted(c, text, font, base_x, base_y, max_width, max_height):
         if current and len(lines) < max_lines:
             lines.append(current)
 
-        # 行数が0は表示しない
-        if not lines:
-            continue
-
         total_h = len(lines) * size + (len(lines) - 1) * line_gap
-
         if total_h <= max_height:
-            # ✔ 収まる → 描画
             c.setFont(font, size)
             y = base_y
             for ln in lines:
-                # 文字描画
                 c.drawString(base_x, y, ln)
                 y -= (size + line_gap)
             return
 
-    # ❗ 超非常手段 → 最小フォントで省略せず表示
     c.setFont(font, min_font)
-    c.drawString(base_x, base_y, text[:50] + "...")
+    c.drawString(base_x, base_y, text[:40] + "...")
+
 
 
 
 def draw_answer_fitted(c, text, font, base_x, base_y, max_width, max_height):
-    """
-    1行ぶんの縦スペース(max_height)の中に
-    長いテキストを折り返し + 縮小して強制フィットさせる
-    """
+    if not text:
+        return
 
-    # ▼ フィットさせたい最大フォントサイズ
-    font_size = 10
+    max_font = 10
+    min_font = 4
+    max_lines = 2  # ⭐ 解答も2行まで
 
-    while font_size >= 4:  # 最低 5pt まで縮小
-        # 行間はフォントサイズに応じて可変
-        line_gap = max(1, int(font_size * 0.2))
+    for size in range(max_font, min_font - 1, -1):
+        line_gap = max(1, int(size * 0.2))
 
-        # テキストを折り返し
         words = text.split(" ")
         lines = []
         current = ""
+
         for w in words:
-            tmp = (current + " " + w).strip()
-            if stringWidth(tmp, font, font_size) <= max_width:
-                current = tmp
+            test = (current + " " + w).strip()
+            if stringWidth(test, font, size) <= max_width:
+                current = test
             else:
                 if current:
                     lines.append(current)
                 current = w
-        if current:
+
+                if len(lines) >= max_lines:
+                    current = ""
+                    break
+
+        if current and len(lines) < max_lines:
             lines.append(current)
 
-        # 総高さ計算
-        total_h = len(lines) * font_size + (len(lines) - 1) * line_gap
-
+        total_h = len(lines) * size + (len(lines) - 1) * line_gap
         if total_h <= max_height:
-            # ✔ 収まった → 描画して終了
-            c.setFont(font, font_size)
+            c.setFont(font, size)
             y = base_y
             for ln in lines:
                 c.drawString(base_x, y, ln)
-                y -= (font_size + line_gap)
+                y -= (size + line_gap)
             return
 
-        # 収まらない → フォント縮小
-        font_size -= 1
+    c.setFont(font, min_font)
+    c.drawString(base_x, base_y, text[:40] + "...")
 
-    # 非常事態：5ptでも入らない → 省略表示
-    c.setFont(font, 5)
-    c.drawString(base_x, base_y, text[:20] + "...")
 
 
 def fit_font_size(text, font, max_width, max_size=11, min_size=8):
@@ -540,6 +521,7 @@ def serve_pdf(filename):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 3710))
     app.run(host="0.0.0.0", port=port)
+
 
 
 
