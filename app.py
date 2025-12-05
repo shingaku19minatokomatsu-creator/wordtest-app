@@ -15,6 +15,7 @@ from reportlab.pdfbase.cidfonts import UnicodeCIDFont
 import os
 from reportlab.pdfbase.pdfmetrics import stringWidth
 from flask import request, abort
+from reportlab.pdfbase.ttfonts import TTFont
 
 ALLOWED_IP_PREFIX = "192.168.0."
 
@@ -36,12 +37,14 @@ TMPDIR.mkdir(parents=True, exist_ok=True)
 
 app = Flask(__name__)
 
-# 日本語フォント（失敗したら自動で代替フォント）
-DEFAULT_FONT = "HeiseiMin-W3"
+# ====== 日本語フォント（同梱） ======
+FONT_PATH = Path("fonts/ipaexm.ttf")
+DEFAULT_FONT = "IPAEX_M"
+
 try:
-    pdfmetrics.registerFont(UnicodeCIDFont(DEFAULT_FONT))
-except Exception:
-    print("⚠ 日本語フォントが使用できません。→ Helvetica に切替")
+    pdfmetrics.registerFont(TTFont(DEFAULT_FONT, str(FONT_PATH)))
+except Exception as e:
+    print("⚠ 日本語フォントの読み込みに失敗 → Helveticaに変更", e)
     DEFAULT_FONT = "Helvetica"
 
 
@@ -484,6 +487,7 @@ def serve_pdf(filename):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 3710))
     app.run(host="0.0.0.0", port=port)
+
 
 
 
