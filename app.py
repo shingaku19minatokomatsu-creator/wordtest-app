@@ -18,11 +18,16 @@ from flask import request, abort
 
 ALLOWED_IP_PREFIX = "192.168.0."
 
+
+app = Flask(__name__)
+
 @app.before_request
-def limit_local_use():
-    ip = request.remote_addr or ""
-    if not ip.startswith(ALLOWED_IP_PREFIX):
-        abort(403)  # Forbidden（外部拒否）
+def limit_local_only():
+    ip = request.remote_addr
+    # LAN（ 192.168.x.x と 10.x.x.x ）のみ許可
+    if not (ip.startswith("192.168.") or ip.startswith("10.")):
+        return "このネットワークからのみ利用可能です", 403
+
         
 # ====== 設定 ======
 EXCEL_PATH = Path("英単語テスト.xlsx")
@@ -475,6 +480,7 @@ def serve_pdf(filename):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 3710))
     app.run(host="0.0.0.0", port=port)
+
 
 
 
