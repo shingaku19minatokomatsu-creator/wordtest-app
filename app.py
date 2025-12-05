@@ -34,15 +34,21 @@ def limit_local_only():
 # ====== 設定 ======
 EXCEL_PATH = Path("英単語テスト.xlsx")
 
-# 安定した PDF 保存フォルダ
+# 安定した PDF 保存フォルダ（Render対応）
 try:
     TMPDIR = Path(gettempdir()) / "word_a_mode"
     TMPDIR.mkdir(parents=True, exist_ok=True)
 except Exception:
     TMPDIR = Path("/tmp/word_a_mode")
-    TMPDIR.mkdir(parents=True, exist_ok=True)
 
-print("📁 PDF 保存先:", TMPDIR)
+# Render で mkdir が効かないケースに追加安全策
+if not TMPDIR.exists():
+    try:
+        TMPDIR.mkdir(parents=True, exist_ok=True)
+    except:
+        pass
+
+print("📁 PDF 保存先:", TMPDIR.absolute())
 
 app = Flask(__name__)
 
@@ -506,6 +512,7 @@ def serve_pdf(filename):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 3710))
     app.run(host="0.0.0.0", port=port)
+
 
 
 
