@@ -463,17 +463,29 @@ def generate():
     start = int(data["start"])
     end   = int(data["end"])
 
-    rows = load_sheet_rows(EXCEL_PATH, sheet)
-    items = pick40(rows, start, end)
+    print(f"📌 読み込むシート: {sheet}, 範囲: {start}-{end}")
 
-    final_pdf = make_two_page_pdf(items, sheet, start, end)
+    rows = load_sheet_rows(EXCEL_PATH, sheet)
+    print(f"📄 取得した行数: {len(rows)}")
+
+    items = pick40(rows, start, end)
+    print(f"🧮 抽出した問題数: {len(items)}")
+
+    try:
+        final_pdf = make_two_page_pdf(items, sheet, start, end)
+        print(f"📦 PDF 出力パス: {final_pdf}")
+    except Exception as e:
+        print("🚨 PDF 生成中にエラー:", e)
+        return jsonify({"error": "PDF作成に失敗しました"}), 500
 
     if final_pdf is None or not final_pdf.exists():
-        return jsonify({"error": "PDF作成に失敗しました。フォント環境を確認してください。"}), 500
+        print("🚨 PDF が None または存在しません")
+        return jsonify({"error": "PDF作成に失敗しました"}), 500
 
     return jsonify({
         "pdf_url": f"/pdf/{final_pdf.name}"
     })
+
 
 @app.route("/pdf/<filename>")
 def serve_pdf(filename):
@@ -487,6 +499,7 @@ def serve_pdf(filename):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 3710))
     app.run(host="0.0.0.0", port=port)
+
 
 
 
