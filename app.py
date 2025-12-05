@@ -265,7 +265,7 @@ def draw_answer_fitted(c, text, font, base_x, base_y, max_width, max_height):
         return
 
     max_font = 10
-    min_font = 4
+    min_font = 3
     max_lines = 2  # ⭐ 解答も2行まで
 
     for size in range(max_font, min_font - 1, -1):
@@ -305,7 +305,7 @@ def draw_answer_fitted(c, text, font, base_x, base_y, max_width, max_height):
 
 
 
-def fit_font_size(text, font, max_width, max_size=11, min_size=8):
+def fit_font_size(text, font, max_width, max_size=10, min_size=4):
     """
     文字が max_width に収まるフォントサイズを返す
     """
@@ -416,7 +416,7 @@ def make_two_page_pdf(items, sheet, start, end):
                 y = start_y - i * line_h
         
                 # 番号
-                c.setFont(DEFAULT_FONT, 11)
+                c.setFont(DEFAULT_FONT, 10)
                 c.drawString(base_x, y, f"{r['no']}.")
         
                 # ▼ 幅設定（安全マージン）
@@ -521,6 +521,7 @@ def serve_pdf(filename):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 3710))
     app.run(host="0.0.0.0", port=port)
+
 
 
 
