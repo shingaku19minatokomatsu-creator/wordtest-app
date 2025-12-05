@@ -441,19 +441,25 @@ def make_two_page_pdf(items, sheet, start, end):
         
                 # ▼ 問題（折り返し縮小）
                 qx = base_x + 10*mm
-                max_q_width = col_w - 45*mm
+                
+                question_width = col_w * 0.55
+                answer_width   = col_w * 0.45
+                
+                max_q_width = question_width
                 max_h = line_h - 3
+                
                 draw_text_fitted(c, r['q'], DEFAULT_FONT, qx, y, max_q_width, max_h)
-        
+                
                 if mode_label == "q":
                     lx1 = qx + max_q_width + 2*mm
                     lx2 = base_x + col_w - 5*mm
                     c.setLineWidth(0.5)
                     c.line(lx1, y - 3, lx2, y - 3)
                 else:
-                    ax = qx + 45*mm
-                    max_answer_width = col_w - (ax - base_x) - 5*mm
+                    ax = qx + question_width + 5*mm
+                    max_answer_width = answer_width - 10*mm
                     draw_text_fitted(c, r['a'], DEFAULT_FONT, ax, y, max_answer_width, max_h)
+
         
 
         draw_col(left_x, 0)
@@ -521,6 +527,7 @@ def serve_pdf(filename):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 3710))
     app.run(host="0.0.0.0", port=port)
+
 
 
 
