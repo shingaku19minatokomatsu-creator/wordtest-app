@@ -405,7 +405,7 @@ def make_two_page_pdf(items, sheet, start, end):
     def draw_page(mode_label):
         title_y  = PH - 10*mm
         words_y  = title_y - 10*mm
-        start_y  = words_y - 18*mm
+        start_y  = words_y - 16*mm
 
         c.setFont(DEFAULT_FONT, 16)
         c.drawString(left_x, title_y, "shingaku19minato test")
@@ -516,6 +516,7 @@ def serve_pdf(filename):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 3710))
     app.run(host="0.0.0.0", port=port)
+
 
 
 
