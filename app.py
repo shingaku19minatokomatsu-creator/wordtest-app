@@ -421,7 +421,7 @@ def make_two_page_pdf(items, sheet, start, end):
         rows_per_col = 20
         bottom = 12*mm
         avail_h = start_y - bottom
-        line_h = avail_h / (rows_per_col - 1)
+        line_h = avail_h / rows_per_col
         if line_h > 12*mm: line_h = 12*mm
         if line_h < 9*mm:  line_h = 9*mm
 
@@ -438,7 +438,7 @@ def make_two_page_pdf(items, sheet, start, end):
                 # 番号
                 c.setFont(DEFAULT_FONT, 11)
                 c.drawString(base_x, y, f"{r['no']}.")
-        
+                        
                 # ▼ 問題（折り返し縮小）
                 qx = base_x + 10*mm
                 
@@ -446,9 +446,12 @@ def make_two_page_pdf(items, sheet, start, end):
                 answer_width   = col_w * 0.45
                 
                 max_q_width = question_width
-                max_h = line_h - 3
+                
+                # ★★★ 高さを「3行分」確保する
+                max_h = line_h * 2.8
                 
                 draw_text_fitted(c, r['q'], DEFAULT_FONT, qx, y, max_q_width, max_h)
+                
                 
                 if mode_label == "q":
                     lx1 = qx + max_q_width + 2*mm
@@ -457,8 +460,20 @@ def make_two_page_pdf(items, sheet, start, end):
                     c.line(lx1, y - 3, lx2, y - 3)
                 else:
                     ax = qx + question_width + 5*mm
-                    max_answer_width = answer_width - 10*mm
-                    draw_text_fitted(c, r['a'], DEFAULT_FONT, ax, y, max_answer_width, max_h)
+                
+                    max_answer_width = answer_width - 5*mm
+                
+                    # ★★★ 解答側にも同じ高さを与える
+                    draw_text_fitted(
+                        c,
+                        r['a'],
+                        DEFAULT_FONT,
+                        ax,
+                        y,
+                        max_answer_width,
+                        max_h     # ここだけが超重要！
+                    )
+
 
         
 
@@ -527,6 +542,7 @@ def serve_pdf(filename):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 3710))
     app.run(host="0.0.0.0", port=port)
+
 
 
 
