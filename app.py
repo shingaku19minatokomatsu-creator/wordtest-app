@@ -36,12 +36,14 @@ TMPDIR.mkdir(parents=True, exist_ok=True)
 
 app = Flask(__name__)
 
-# 日本語フォント
+# 日本語フォント（失敗したら自動で代替フォント）
 DEFAULT_FONT = "HeiseiMin-W3"
 try:
     pdfmetrics.registerFont(UnicodeCIDFont(DEFAULT_FONT))
 except Exception:
+    print("⚠ 日本語フォントが使用できません。→ Helvetica に切替")
     DEFAULT_FONT = "Helvetica"
+
 
 # ===== HTML ======
 INDEX_HTML = """
@@ -461,8 +463,10 @@ def generate():
     rows = load_sheet_rows(EXCEL_PATH, sheet)
     items = pick40(rows, start, end)
 
-    # 2ページPDFを生成
     final_pdf = make_two_page_pdf(items, sheet, start, end)
+
+    if final_pdf is None or not final_pdf.exists():
+        return jsonify({"error": "PDF作成に失敗しました。フォント環境を確認してください。"}), 500
 
     return jsonify({
         "pdf_url": f"/pdf/{final_pdf.name}"
@@ -480,6 +484,7 @@ def serve_pdf(filename):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 3710))
     app.run(host="0.0.0.0", port=port)
+
 
 
 
