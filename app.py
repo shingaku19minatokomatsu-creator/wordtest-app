@@ -426,7 +426,7 @@ def make_two_page_pdf(items, sheet, start, end):
                 qx = base_x + 10*mm
         
                 # ▼ 高さを3行分確保
-                max_h = line_h * 3.6
+                max_h = line_h * 2.8
         
                 # ▼ 問題
                 draw_text_fitted(
@@ -520,6 +520,7 @@ def serve_pdf(filename):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 3710))
     app.run(host="0.0.0.0", port=port)
+
 
 
 
