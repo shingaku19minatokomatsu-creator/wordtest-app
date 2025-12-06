@@ -219,8 +219,8 @@ def draw_text_fitted(c, text, font, base_x, base_y, max_width, max_height):
         return
 
     max_font = 10
-    min_font = 4
-    max_lines = 2  # ⭐ 最大行数を2に制限
+    min_font = 3
+    max_lines = 3 
 
     for size in range(max_font, min_font - 1, -1):
         line_gap = max(1, int(size * 0.2))
@@ -266,8 +266,7 @@ def draw_answer_fitted(c, text, font, base_x, base_y, max_width, max_height):
 
     max_font = 10
     min_font = 3
-    max_lines = 2  # ⭐ 解答も2行まで
-
+    max_lines = 3  
     for size in range(max_font, min_font - 1, -1):
         line_gap = max(1, int(size * 0.2))
 
@@ -427,7 +426,7 @@ def make_two_page_pdf(items, sheet, start, end):
                 qx = base_x + 10*mm
         
                 # ▼ 高さを3行分確保
-                max_h = line_h * 2.8
+                max_h = line_h * 3.6
         
                 # ▼ 問題
                 draw_text_fitted(
@@ -521,6 +520,7 @@ def serve_pdf(filename):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 3710))
     app.run(host="0.0.0.0", port=port)
+
 
 
 
