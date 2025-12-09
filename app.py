@@ -17,18 +17,22 @@ from reportlab.pdfbase.pdfmetrics import stringWidth
 from flask import request, abort
 from reportlab.pdfbase.ttfonts import TTFont
 from tempfile import gettempdir
-
-ALLOWED_IP_PREFIX = "192.168.0."
-
+from flask import Flask, request
 
 app = Flask(__name__)
 
+# 塾のグローバルIP
+ALLOWED_PREFIXES = [
+    "121.102."
+]
+
 @app.before_request
-def limit_local_only():
-    ip = request.remote_addr
-    # LAN（ 192.168.x.x と 10.x.x.x ）のみ許可
-    if not (ip.startswith("192.168.") or ip.startswith("10.")):
-        return "このネットワークからのみ利用可能です", 403
+def limit_school_wifi_only():
+    # Render は実IPをこのヘッダで渡す
+    ip = request.headers.get("X-Forwarded-For", "").split(",")[0].strip()
+
+    if not any(ip.startswith(p) for p in ALLOWED_PREFIXES):
+        return "塾のWi-Fi接続時のみ利用できます", 403
 
         
 # ====== 設定 ======
@@ -515,6 +519,7 @@ def serve_pdf(filename):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 3710))
     app.run(host="0.0.0.0", port=port)
+
 
 
 
