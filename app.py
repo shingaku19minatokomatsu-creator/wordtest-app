@@ -218,85 +218,82 @@ def draw_text_fitted(c, text, font, base_x, base_y, max_width, max_height):
     if not text:
         return
 
-    # 設定
     max_font  = 10
     min_font  = 3
     max_lines = 3
 
-    # 長文なら最大フォントサイズを下げる
     if len(text) > 80:
         max_font = 7
 
     for size in range(max_font, min_font - 1, -1):
         line_gap = max(2, int(size * 0.3))
 
-        # ★ あなたの wrap_text() を使用
         lines = wrap_text(text, font, size, max_width)
 
-        # 行数制限
+        # ★ ここが最重要：先に行数で弾く
         if len(lines) > max_lines:
-            lines = lines[:max_lines]
+            continue
 
         total_h = len(lines) * size + (len(lines) - 1) * line_gap
 
-        # 枠内に収まるかチェック
         if total_h <= max_height:
-
-            # 上寄せ配置（最も安全）
             y = base_y
-
             c.setFont(font, size)
             for ln in lines:
                 c.drawString(base_x, y, ln)
                 y -= (size + line_gap)
             return
 
-    # それでも収まらない場合（保険）
+    # 最後の保険（強制切り）
     size = min_font
     c.setFont(font, size)
-    short = text[:40] + "..." if len(text) > 40 else text
-    c.drawString(base_x, base_y, short)
+    lines = wrap_text(text, font, size, max_width)[:max_lines]
+    y = base_y
+    for ln in lines:
+        c.drawString(base_x, y, ln)
+        y -= (size + line_gap)
+
 
 def draw_answer_fitted(c, text, font, base_x, base_y, max_width, max_height):
     if not text:
         return
 
-    # 設定
     max_font  = 10
     min_font  = 3
     max_lines = 3
 
-    # 長文はフォント最大サイズを下げる
     if len(text) > 80:
         max_font = 7
 
     for size in range(max_font, min_font - 1, -1):
         line_gap = max(2, int(size * 0.3))
 
-        # ★ wrap_text を使用
         lines = wrap_text(text, font, size, max_width)
 
-        # 行数制限
+        # ★ 先に行数オーバーならフォントを下げる
         if len(lines) > max_lines:
-            lines = lines[:max_lines]
+            continue
 
         total_h = len(lines) * size + (len(lines) - 1) * line_gap
 
         if total_h <= max_height:
-            # 上寄せ（安全）
             y = base_y
-
             c.setFont(font, size)
             for ln in lines:
                 c.drawString(base_x, y, ln)
                 y -= (size + line_gap)
             return
 
-    # 最小フォントでも収まらない場合
+    # 最後の保険：最小フォントで強制表示（途中切れOK）
     size = min_font
+    line_gap = max(2, int(size * 0.3))
     c.setFont(font, size)
-    short = text[:40] + "..." if len(text) > 40 else text
-    c.drawString(base_x, base_y, short)
+    lines = wrap_text(text, font, size, max_width)[:max_lines]
+    y = base_y
+    for ln in lines:
+        c.drawString(base_x, y, ln)
+        y -= (size + line_gap)
+
 
 
 def fit_font_size(text, font, max_width, max_size=10, min_size=4):
@@ -441,7 +438,8 @@ def make_two_page_pdf(items, sheet, start, end):
                 else:
                     # ▼ 解答（右に寄せる）
                     ax = base_x + question_width + margin_between
-                    draw_answer_fitted( # ★ draw_answer_fitted を呼び出す
+                    # 修正: draw_text_fitted から draw_answer_fitted に変更
+                    draw_answer_fitted( 
                         c, r['a'], DEFAULT_FONT,
                         ax, y,
                         answer_width,
@@ -517,6 +515,7 @@ def serve_pdf(filename):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 3710))
     app.run(host="0.0.0.0", port=port)
+
 
 
 
