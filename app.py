@@ -218,117 +218,85 @@ def draw_text_fitted(c, text, font, base_x, base_y, max_width, max_height):
     if not text:
         return
 
-    max_font = 10
-    min_font = 3
+    # 設定
+    max_font  = 10
+    min_font  = 3
     max_lines = 3
+
+    # 長文なら最大フォントサイズを下げる
+    if len(text) > 80:
+        max_font = 7
 
     for size in range(max_font, min_font - 1, -1):
         line_gap = max(2, int(size * 0.3))
 
-        if " " in text:
-            words = text.split(" ")
-        else:
-            # 日本語などスペースが無い言語用
-            words = list(text)
+        # ★ あなたの wrap_text() を使用
+        lines = wrap_text(text, font, size, max_width)
 
-        lines = []
-        current = ""
-
-        for w in words:
-            test = (current + " " + w).strip()
-            if stringWidth(test, font, size) <= max_width:
-                current = test
-            else:
-                if current:
-                    lines.append(current)
-                current = w
-
-                if len(lines) >= max_lines:
-                    current = ""
-                    break
-
-        if current and len(lines) < max_lines:
-            lines.append(current)
+        # 行数制限
+        if len(lines) > max_lines:
+            lines = lines[:max_lines]
 
         total_h = len(lines) * size + (len(lines) - 1) * line_gap
 
-        # ★ 枠に収まるか？
+        # 枠内に収まるかチェック
         if total_h <= max_height:
 
-            # ★ 上寄せ固定（重なり防止）
-            start_y = base_y
-            
+            # 上寄せ配置（最も安全）
+            y = base_y
+
             c.setFont(font, size)
-            y = start_y
             for ln in lines:
                 c.drawString(base_x, y, ln)
                 y -= (size + line_gap)
             return
 
-    # それでも入らない時（安全版）
+    # それでも収まらない場合（保険）
     size = min_font
     c.setFont(font, size)
-    c.drawString(base_x, base_y - (min_font * 0.3), text[:40] + "...")
-
-
-
-
+    short = text[:40] + "..." if len(text) > 40 else text
+    c.drawString(base_x, base_y, short)
 
 def draw_answer_fitted(c, text, font, base_x, base_y, max_width, max_height):
     if not text:
         return
 
-    max_font = 10
-    min_font = 3
+    # 設定
+    max_font  = 10
+    min_font  = 3
     max_lines = 3
+
+    # 長文はフォント最大サイズを下げる
+    if len(text) > 80:
+        max_font = 7
 
     for size in range(max_font, min_font - 1, -1):
         line_gap = max(2, int(size * 0.3))
 
-        if " " in text:
-            words = text.split(" ")
-        else:
-            # 日本語などスペースが無い言語用
-            words = list(text)
-        lines = []
-        current = ""
+        # ★ wrap_text を使用
+        lines = wrap_text(text, font, size, max_width)
 
-        for w in words:
-            test = (current + " " + w).strip()
-            if stringWidth(test, font, size) <= max_width:
-                current = test
-            else:
-                if current:
-                    lines.append(current)
-                current = w
-
-                if len(lines) >= max_lines:
-                    current = ""
-                    break
-
-        if current and len(lines) < max_lines:
-            lines.append(current)
+        # 行数制限
+        if len(lines) > max_lines:
+            lines = lines[:max_lines]
 
         total_h = len(lines) * size + (len(lines) - 1) * line_gap
 
         if total_h <= max_height:
-
-            # ★ 上寄せ固定（重なり防止）
-            start_y = base_y
+            # 上寄せ（安全）
+            y = base_y
 
             c.setFont(font, size)
-            y = start_y
             for ln in lines:
                 c.drawString(base_x, y, ln)
                 y -= (size + line_gap)
             return
 
-    # それでも入らない時（安全版）
+    # 最小フォントでも収まらない場合
     size = min_font
     c.setFont(font, size)
-    c.drawString(base_x, base_y - (min_font * 0.3), text[:40] + "...")
-
-
+    short = text[:40] + "..." if len(text) > 40 else text
+    c.drawString(base_x, base_y, short)
 
 
 def fit_font_size(text, font, max_width, max_size=10, min_size=4):
@@ -342,25 +310,27 @@ def fit_font_size(text, font, max_width, max_size=10, min_size=4):
     return min_size
     
 def wrap_text(text, font, size, max_width):
-    """
-    指定フォント・サイズで max_width に収まるように折り返す
-    """
-    words = text.split(" ")
+    if " " in text:
+        units = text.split(" ")
+    else:
+        units = list(text)
+
     lines = []
     current = ""
 
-    for w in words:
-        test = (current + " " + w).strip()
+    for u in units:
+        test = (current + " " + u).strip() if " " in text else (current + u)
         if stringWidth(test, font, size) <= max_width:
             current = test
         else:
-            if current:
-                lines.append(current)
-            current = w
+            lines.append(current)
+            current = u
+
     if current:
         lines.append(current)
 
     return lines
+
 
 
 
@@ -547,6 +517,7 @@ def serve_pdf(filename):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 3710))
     app.run(host="0.0.0.0", port=port)
+
 
 
 
