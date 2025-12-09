@@ -22,32 +22,48 @@ from flask import Flask, request
 app = Flask(__name__)
 
 # 塾のグローバルIP
-ALLOWED_PREFIXES = [
+ALLOWED_IPS = [
     "121.102."
 ]
 
+# ====== IP制限の設定 ======
 def get_real_ip():
+    """Render環境で正しいIPを取得する関数"""
     headers = request.headers
-
-    # 優先順位つきで取得
-    ip = (
-        headers.get("CF-Connecting-IP") or
-        headers.get("X-Forwarded-For", "").split(",")[0].strip() or
-        headers.get("X-Real-IP") or
-        request.remote_addr
-    )
-    return ip
-
+    
+    # Renderでは X-Forwarded-For の先頭が本当のアクセス元IPです
+    x_forwarded_for = headers.get("X-Forwarded-For")
+    if x_forwarded_for:
+        return x_forwarded_for.split(",")[0].strip()
+        
+    return headers.get("X-Real-IP") or request.remote_addr
 
 @app.before_request
 def limit_school_wifi_only():
-    ip = get_real_ip()
+    # 静的ファイル（CSSなど）は制限しない（動作を安定させるため）
+    if request.path.startswith('/static') or request.path == '/favicon.ico':
+        return
 
-    ALLOWED_PREFIXES = ["121.102."]
+    client_ip = get_real_ip()
 
-    if not any(ip.startswith(p) for p in ALLOWED_PREFIXES):
-        return f"このWi-Fiでは利用できません\n現在のIP: {ip}", 403
-
+    # IPチェック（ALLOWED_IPS のどれかで始まっていればOK）
+    is_allowed = False
+    for allowed in ALLOWED_IPS:
+        if client_ip.startswith(allowed):
+            is_allowed = True
+            break
+            
+    if not is_allowed:
+        # 拒否された場合にIPを表示（設定時の確認用）
+        return f"""
+        <div style="padding:20px; font-family:sans-serif;">
+            <h2>アクセスできません</h2>
+            <p>このページは指定されたWi-Fi（ネットワーク）からのみアクセス可能です。</p>
+            <hr>
+            <p style="color:#666;">あなたの現在のIPアドレス: <strong>{client_ip}</strong></p>
+            <p style="font-size:12px; color:#999;">※このIPを ALLOWED_IPS に追加してください。</p>
+        </div>
+        """, 403
 
         
 # ====== 設定 ======
@@ -534,6 +550,7 @@ def serve_pdf(filename):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 3710))
     app.run(host="0.0.0.0", port=port)
+
 
 
 
