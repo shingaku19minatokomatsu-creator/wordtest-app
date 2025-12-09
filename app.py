@@ -501,10 +501,12 @@ def make_two_page_pdf(items, sheet, start, end):
     return filename
 
   
- ===== Routes ======
+# ===== Routes ======
 @app.route("/")
 def index():
+    # ★ ここは半角スペース4つ
     wb = load_workbook(str(EXCEL_PATH), read_only=True)
+    # ★ ここは半角スペース4つ
     return render_template_string(INDEX_HTML, sheets=wb.sheetnames)
 
 @app.route("/generate", methods=["POST"])
@@ -550,6 +552,7 @@ def serve_pdf(filename):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 3710))
     app.run(host="0.0.0.0", port=port)
+
 
 
 
