@@ -23,7 +23,7 @@ app = Flask(__name__)
 
 # 塾のグローバルIP
 ALLOWED_IPS = [
-    "121.102."
+    "121.102.8." # IPアドレスの先頭3オクテット + ドットで記述（変動対策）
 ]
 
 # ====== IP制限の設定 ======
@@ -34,37 +34,45 @@ def get_real_ip():
     # Renderでは X-Forwarded-For の先頭が本当のアクセス元IPです
     x_forwarded_for = headers.get("X-Forwarded-For")
     if x_forwarded_for:
+        # 最初のIP（クライアントIP）を取得
         return x_forwarded_for.split(",")[0].strip()
         
     return headers.get("X-Real-IP") or request.remote_addr
 
-@app.before_request
+@app.before_request # ★ 重複削除済み
 def limit_school_wifi_only():
-    # 静的ファイル（CSSなど）は制限しない（動作を安定させるため）
+    # 静的ファイル（CSSなど）は制限しない
     if request.path.startswith('/static') or request.path == '/favicon.ico':
         return
 
     client_ip = get_real_ip()
 
+    # コードで定義された ALLOWED_IPS を使用
+    allowed_list_to_check = ALLOWED_IPS
+    
+    # 許可リストが空でないかチェック
+    if not allowed_list_to_check:
+        # リストが空の場合は安全のためにアクセス拒否 (500 Internal Server Error)
+        return f"設定エラー: 許可IPリスト (ALLOWED_IPS) が空です。", 500
+
     # IPチェック（ALLOWED_IPS のどれかで始まっていればOK）
     is_allowed = False
-    for allowed in ALLOWED_IPS:
-        if client_ip.startswith(allowed):
+    for allowed in allowed_list_to_check:
+        if client_ip.startswith(allowed): # 変動IPに対応するため .startswith() を使用
             is_allowed = True
             break
             
     if not is_allowed:
-        # 拒否された場合にIPを表示（設定時の確認用）
+        # 拒否された場合にIPを表示
         return f"""
         <div style="padding:20px; font-family:sans-serif;">
             <h2>アクセスできません</h2>
             <p>このページは指定されたWi-Fi（ネットワーク）からのみアクセス可能です。</p>
             <hr>
             <p style="color:#666;">あなたの現在のIPアドレス: <strong>{client_ip}</strong></p>
-            <p style="font-size:12px; color:#999;">※このIPを ALLOWED_IPS に追加してください。</p>
+            <p style="font-size:12px; color:#999;">※このIPが正しい場合はコードの ALLOWED_IPS に追加してください。</p>
         </div>
         """, 403
-
         
 # ====== 設定 ======
 EXCEL_PATH = Path("英単語テスト.xlsx")
@@ -550,6 +558,7 @@ def serve_pdf(filename):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 3710))
     app.run(host="0.0.0.0", port=port)
+
 
 
 
