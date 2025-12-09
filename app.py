@@ -26,13 +26,28 @@ ALLOWED_PREFIXES = [
     "121.102."
 ]
 
+def get_real_ip():
+    headers = request.headers
+
+    # 優先順位つきで取得
+    ip = (
+        headers.get("CF-Connecting-IP") or
+        headers.get("X-Forwarded-For", "").split(",")[0].strip() or
+        headers.get("X-Real-IP") or
+        request.remote_addr
+    )
+    return ip
+
+
 @app.before_request
 def limit_school_wifi_only():
-    # Render は実IPをこのヘッダで渡す
-    ip = request.headers.get("X-Forwarded-For", "").split(",")[0].strip()
+    ip = get_real_ip()
+
+    ALLOWED_PREFIXES = ["121.102."]
 
     if not any(ip.startswith(p) for p in ALLOWED_PREFIXES):
-        return "塾のWi-Fi接続時のみ利用できます", 403
+        return f"このWi-Fiでは利用できません\n現在のIP: {ip}", 403
+
 
         
 # ====== 設定 ======
@@ -519,6 +534,7 @@ def serve_pdf(filename):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 3710))
     app.run(host="0.0.0.0", port=port)
+
 
 
 
