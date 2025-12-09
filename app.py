@@ -423,7 +423,7 @@ def make_two_page_pdf(items, sheet, start, end):
                 qx = base_x + 10*mm
         
                 # ▼ 高さを3行分確保
-                max_h = line_h * 3.0
+                max_h = line_h * 3.2
         
                 # ▼ 問題
                 draw_text_fitted(
@@ -441,7 +441,7 @@ def make_two_page_pdf(items, sheet, start, end):
                 else:
                     # ▼ 解答（右に寄せる）
                     ax = base_x + question_width + margin_between
-                    draw_text_fitted(
+                    draw_answer_fitted( # ★ draw_answer_fitted を呼び出す
                         c, r['a'], DEFAULT_FONT,
                         ax, y,
                         answer_width,
@@ -517,6 +517,7 @@ def serve_pdf(filename):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 3710))
     app.run(host="0.0.0.0", port=port)
+
 
 
 
