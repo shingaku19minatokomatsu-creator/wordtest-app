@@ -225,7 +225,12 @@ def draw_text_fitted(c, text, font, base_x, base_y, max_width, max_height):
     for size in range(max_font, min_font - 1, -1):
         line_gap = max(2, int(size * 0.3))
 
-        words = text.split(" ")
+        if " " in text:
+            words = text.split(" ")
+        else:
+            # 日本語などスペースが無い言語用
+            words = list(text)
+
         lines = []
         current = ""
 
@@ -250,9 +255,9 @@ def draw_text_fitted(c, text, font, base_x, base_y, max_width, max_height):
         # ★ 枠に収まるか？
         if total_h <= max_height:
 
-            # ★ 枠の中で中央寄せ
-            start_y = base_y + (max_height - total_h) / 2
-
+            # ★ 上寄せ固定（重なり防止）
+            start_y = base_y
+            
             c.setFont(font, size)
             y = start_y
             for ln in lines:
@@ -260,10 +265,11 @@ def draw_text_fitted(c, text, font, base_x, base_y, max_width, max_height):
                 y -= (size + line_gap)
             return
 
-    # それでもダメなら最小フォントで…
+    # それでも入らない時（安全版）
     size = min_font
     c.setFont(font, size)
-    c.drawString(base_x, base_y, text[:40] + "...")
+    c.drawString(base_x, base_y - (min_font * 0.3), text[:40] + "...")
+
 
 
 
@@ -279,7 +285,11 @@ def draw_answer_fitted(c, text, font, base_x, base_y, max_width, max_height):
     for size in range(max_font, min_font - 1, -1):
         line_gap = max(2, int(size * 0.3))
 
-        words = text.split(" ")
+        if " " in text:
+            words = text.split(" ")
+        else:
+            # 日本語などスペースが無い言語用
+            words = list(text)
         lines = []
         current = ""
 
@@ -303,8 +313,8 @@ def draw_answer_fitted(c, text, font, base_x, base_y, max_width, max_height):
 
         if total_h <= max_height:
 
-            # ★ 枠の中で中央寄せして配置する
-            start_y = base_y + (max_height - total_h) / 2
+            # ★ 上寄せ固定（重なり防止）
+            start_y = base_y
 
             c.setFont(font, size)
             y = start_y
@@ -313,10 +323,10 @@ def draw_answer_fitted(c, text, font, base_x, base_y, max_width, max_height):
                 y -= (size + line_gap)
             return
 
-    # それでも入らない時
+    # それでも入らない時（安全版）
     size = min_font
     c.setFont(font, size)
-    c.drawString(base_x, base_y, text[:40] + "...")
+    c.drawString(base_x, base_y - (min_font * 0.3), text[:40] + "...")
 
 
 
@@ -537,6 +547,7 @@ def serve_pdf(filename):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 3710))
     app.run(host="0.0.0.0", port=port)
+
 
 
 
