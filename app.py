@@ -220,7 +220,7 @@ def draw_text_fitted(c, text, font, base_x, base_y, max_width, max_height):
 
     max_font  = 10
     min_font  = 3
-    max_lines = 3
+    max_lines = 2
 
     if len(text) > 80:
         max_font = 7
@@ -260,7 +260,7 @@ def draw_answer_fitted(c, text, font, base_x, base_y, max_width, max_height):
 
     max_font  = 10
     min_font  = 3
-    max_lines = 3
+    max_lines = 2
 
     if len(text) > 80:
         max_font = 7
@@ -515,6 +515,7 @@ def serve_pdf(filename):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 3710))
     app.run(host="0.0.0.0", port=port)
+
 
 
 
