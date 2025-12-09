@@ -500,36 +500,12 @@ def make_two_page_pdf(items, sheet, start, end):
     c.save()
     return filename
 
+  
+ ===== Routes ======
 @app.route("/")
 def index():
-    headers = request.headers
-    # 既存の get_real_ip() 関数を使用
-    client_ip = get_real_ip() 
-    
-    # 全てのヘッダーを表示し、アプリがどのIPを使っているかを検証
-    all_headers = "<br>".join([f"<strong>{k}</strong>: {v}" for k, v in headers.items()])
-    
-    return f"""
-    <div style="padding:20px; font-family:sans-serif;">
-        <h2>🚨 IPアドレス診断モード</h2>
-        <p><strong>ステップ1：塾のWi-Fiからアクセスしてください。</strong></p>
-        <p>アプリが取得したあなたのIPは以下の通りです。</p>
-        <hr>
-        <h3>アプリが判断したIP (client_ip)</h3>
-        <p style="font-size: 24px; color: green; font-weight: bold;">{client_ip}</p>
-        <hr>
-        <h3>受信ヘッダー一覧 (Render環境下での詳細情報)</h3>
-        <p style="font-size: 10px;">{all_headers}</p>
-        <hr>
-        <p>このページに表示された **client_ip** をメモし、すぐに次のステップに進んでください。</p>
-    </div>
-    """, 200
-    
-# ===== Routes ======
-#@app.route("/")
-#def index():
-#    wb = load_workbook(str(EXCEL_PATH), read_only=True)
-#    return render_template_string(INDEX_HTML, sheets=wb.sheetnames)
+    wb = load_workbook(str(EXCEL_PATH), read_only=True)
+    return render_template_string(INDEX_HTML, sheets=wb.sheetnames)
 
 @app.route("/generate", methods=["POST"])
 def generate():
@@ -574,6 +550,7 @@ def serve_pdf(filename):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 3710))
     app.run(host="0.0.0.0", port=port)
+
 
 
 
