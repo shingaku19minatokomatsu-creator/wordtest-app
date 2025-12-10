@@ -17,55 +17,13 @@ from reportlab.pdfbase.pdfmetrics import stringWidth
 from flask import request, abort
 from reportlab.pdfbase.ttfonts import TTFont
 from tempfile import gettempdir
-from flask import Flask, request
+from flask import session, redirect
+
 
 app = Flask(__name__)
 
-# 塾のグローバルIP
-ALLOWED_IPS = [
-    "121.102.8." # IPアドレスの先頭3オクテット + ドットで記述（変動対策）
-]
-
-# ====== IP制限の設定 (コード直書き版) ======
-def get_real_ip():
-    """Render環境で正しいクライアントIPを取得する"""
-    headers = request.headers
-    
-    # Renderでは X-Forwarded-For の先頭が最も信頼できるクライアントIPです
-    x_forwarded_for = headers.get("X-Forwarded-For")
-    if x_forwarded_for:
-        # 最初のIP（クライアントIP）を取得
-        return x_forwarded_for.split(",")[0].strip()
-        
-    # X-Forwarded-Forがない場合のみ、その他のヘッダーやリモートアドレスを試行
-    return headers.get("CF-Connecting-IP") or headers.get("X-Real-IP") or request.remote_addr
-
-@app.before_request
-def limit_school_wifi_only():
-    # 静的ファイルは制限しない
-    if request.path.startswith('/static') or request.path == '/favicon.ico':
-        return
-
-    client_ip = get_real_ip()
-    allowed_list_to_check = ALLOWED_IPS
-    
-    # IPチェック（ALLOWED_IPS のどれかで始まっていればOK）
-    is_allowed = False
-    for allowed in allowed_list_to_check:
-        if client_ip.startswith(allowed): # 前方一致でチェック
-            is_allowed = True
-            break
-            
-    if not is_allowed:
-        return f"""
-        <div style="padding:20px; font-family:sans-serif;">
-            <h2>アクセスできません</h2>
-            <p>このページは指定されたWi-Fi（ネットワーク）からのみアクセス可能です。</p>
-            <hr>
-            <p style="color:#666;">あなたの現在のIPアドレス: <strong>{client_ip}</strong></p>
-        </div>
-        """, 403
-        
+app.secret_key = "change-this-to-random-string"
+      
 # ====== 設定 ======
 EXCEL_PATH = Path("英単語テスト.xlsx")
 
@@ -248,6 +206,60 @@ async function doGenerate(e){
 </body>
 </html>
 """
+
+LOGIN_HTML = """
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>ログイン</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+body { font-family: sans-serif; max-width: 420px; margin: 60px auto; padding: 20px; }
+input, button { width: 100%; padding: 14px; font-size: 18px; margin: 10px 0; }
+button { background:#007bff; color:#fff; border:none; border-radius:6px; }
+</style>
+</head>
+<body>
+<h2>ログイン</h2>
+<form method="post">
+  <input name="username" placeholder="ID" required>
+  <input name="password" type="password" placeholder="パスワード" required>
+  <button>ログイン</button>
+</form>
+</body>
+</html>
+"""
+
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        user = request.form["username"]
+        pw   = request.form["password"]
+
+        # ★ 好きなIDとパスワードに変更
+        if user == "minato" and pw == "3710":
+            session["login"] = True
+            return redirect("/")
+        else:
+            return "ログイン失敗", 401
+
+    return render_template_string(LOGIN_HTML)
+
+
+@app.before_request
+def require_login():
+    path = request.path
+
+    if path.startswith("/login") or path.startswith("/static"):
+        return
+
+    if not session.get("login"):
+        return redirect("/login")
+
+
+
 
 def draw_text_fitted(c, text, font, base_x, base_y, max_width, max_height):
     if not text:
@@ -501,13 +513,11 @@ def make_two_page_pdf(items, sheet, start, end):
     return filename
 
   
-# ===== Routes ======
 @app.route("/")
 def index():
-    # ★ ここは半角スペース4つ
     wb = load_workbook(str(EXCEL_PATH), read_only=True)
-    # ★ ここは半角スペース4つ
     return render_template_string(INDEX_HTML, sheets=wb.sheetnames)
+
 
 @app.route("/generate", methods=["POST"])
 def generate():
@@ -552,6 +562,7 @@ def serve_pdf(filename):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 3710))
     app.run(host="0.0.0.0", port=port)
+
 
 
 
