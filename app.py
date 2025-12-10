@@ -43,9 +43,6 @@ if not TMPDIR.exists():
 
 print("📁 PDF 保存先:", TMPDIR.absolute())
 
-app = Flask(__name__)
-
-
 # ====== 日本語フォント（同梱） ======
 FONT_PATH = Path("fonts/ipaexm.ttf")
 DEFAULT_FONT = "IPAEX_M"
@@ -562,6 +559,7 @@ def serve_pdf(filename):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 3710))
     app.run(host="0.0.0.0", port=port)
+
 
 
 
