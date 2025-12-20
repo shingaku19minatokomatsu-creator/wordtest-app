@@ -65,12 +65,31 @@ INDEX_HTML = """
 
 <style>
 body {
-    font-family: Arial, sans-serif;
-    max-width: 900px;
-    margin: 0 auto;
-    padding: 18px;
-    font-size: 18px;
+  font-family: Arial, sans-serif;
+  margin: 0 auto;
+  padding: 6mm;
+  font-size: 14px;
+  max-width: none;
+  touch-action: pan-y pinch-zoom;
 }
+
+html, body {
+  overscroll-behavior: none;
+}
+
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 15mm;
+  }
+
+  body {
+    width: 297mm;
+    height: 210mm;
+    padding: 0;
+  }
+}
+
 
 h2 {
     font-size: 26px;
@@ -368,17 +387,8 @@ html, body {
   visibility: visible;
 }
 
-.answer.show {
-  visibility: visible;
-}
-
-
 
 /* ===== canvas ===== */
-
-html, body {
-  overscroll-behavior: none;
-}
 
 canvas {
   display: block;
@@ -416,10 +426,12 @@ canvas {
     <h2>shingaku19minato test</h2>
     <div>words {{sheet}}（{{start}}～{{end}}）</div>
   </div>
-  <div>
-    name：________________<br>
-    score：________________
-  </div>
+    <div>
+        name：
+        <canvas width="160" height="28"></canvas><br>
+        score：
+        <canvas width="160" height="28"></canvas>
+    </div>
 </div>
 
 <div style="margin-bottom:5mm">
@@ -428,6 +440,10 @@ canvas {
 <button onclick="setColor('red')">🔴 赤</button>
 <button onclick="setMode('eraser')">🧽 消しゴム</button>
 <button onclick="clearAll()">🗑 全消し</button>
+<button onclick="window.print()">🖨 印刷</button>
+<button onclick="window.print()">💾 保存（PDF）</button>
+
+
 
 </div>
 
@@ -480,9 +496,9 @@ document.querySelectorAll("canvas").forEach(c=>{
   const ctx = c.getContext("2d");
   let drawing = false;
 
-  ctx.lineWidth = 0.8;       // 細字固定
-  ctx.lineCap = "butt";      // ペン感
-  ctx.lineJoin = "miter";
+  ctx.lineWidth = 0.6;       // 細字固定
+  ctx.lineCap = "round";      // ペン感
+  ctx.lineJoin = "round";
   ctx.strokeStyle = color;
 
   function getPos(e){
@@ -514,10 +530,16 @@ document.querySelectorAll("canvas").forEach(c=>{
     e.preventDefault();
 
     const p = getPos(e);
-    ctx.strokeStyle = color;
-    ctx.lineTo(p.x, p.y);
-    ctx.stroke();
+
+    if(mode === "eraser"){
+        ctx.clearRect(p.x - 6, p.y - 6, 12, 12);   // ★ 消しゴム
+    }else{
+        ctx.strokeStyle = color;
+        ctx.lineTo(p.x, p.y);
+        ctx.stroke();                             // ★ ペン
+    }
   });
+
 
   c.addEventListener("pointerup", e=>{
     drawing = false;
