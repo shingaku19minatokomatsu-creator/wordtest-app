@@ -330,11 +330,12 @@ body {
     22mm
     170px;
 
+  height: 38px;          /* ★ mmやめる */
   align-items: center;
-  height: 10mm;
   font-size: 13px;
   user-select: none;
 }
+
 
 
 
@@ -354,6 +355,7 @@ body {
 }
 
 
+/* ===== canvas ===== */
 canvas {
   display: block;
   background: #f2f2f2;
@@ -362,6 +364,14 @@ canvas {
   pointer-events: auto;
   user-select: none;
 }
+
+/* ===== ★追加：item 配下を全部ロック ===== */
+.item,
+.item * {
+  touch-action: none;   /* ← タブレットでの選択・スクロール完全防止 */
+  user-select: none;
+}
+
 
 
 
@@ -433,11 +443,17 @@ function clearAll(){
   });
 }
 
+function toggleAll(){
+  document.querySelectorAll('.answer')
+    .forEach(a => a.classList.toggle('show'));
+}
+
+
 document.querySelectorAll("canvas").forEach(c=>{
   const ctx = c.getContext("2d");
   let drawing = false;
 
-  ctx.lineWidth = 1.2;       // 細字固定
+  ctx.lineWidth = 0.8;       // 細字固定
   ctx.lineCap = "butt";      // ペン感
   ctx.lineJoin = "miter";
   ctx.strokeStyle = color;
