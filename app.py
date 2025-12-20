@@ -295,7 +295,13 @@ body {
   font-family: Arial, sans-serif;
   margin: 0;
   max-width: 100%;
+
+  touch-action: pan-y pinch-zoom;   /* ★ここを追加 */
 }
+html, body {
+  overscroll-behavior: none;
+}
+
 
 /* ===== 印刷時のみ A4 ===== */
 @media print {
@@ -322,40 +328,46 @@ body {
   display: grid;
   grid-template-columns:
     8mm
-    1fr
-    22mm
-    170px
+    6fr        /* 問題 */
+    2fr        /* 解答 */
+    190px      /* canvas（少し広げる） */
     8mm
-    1fr
-    22mm
-    170px;
+    6fr
+    2fr
+    190px;
 
-  height: 38px;          /* ★ mmやめる */
+  height: 32px;          /* ★ 高さも少し余裕 */
   align-items: center;
   font-size: 13px;
-  user-select: none;
+  box-sizing: border-box;
 }
 
-
-
-
-
-
 .answer {
-  min-width: 22mm;   /* ★ これ */
+  min-width: 0;
   font-weight: bold;
   color: red;
   opacity: 0.85;
+
   visibility: hidden;
-  font-size: 10px;
+
+  font-size: 11px;          /* 通常 */
   line-height: 1.2;
+
+  white-space: normal;      /* 折り返し */
+  word-break: break-word;
 }
 .answer.show {
   visibility: visible;
 }
 
 
+
 /* ===== canvas ===== */
+
+html, body {
+  overscroll-behavior: none;
+}
+
 canvas {
   display: block;
   background: #f2f2f2;
@@ -413,13 +425,13 @@ canvas {
         <div>{{item.no}}.</div>
         <div>{{item.q}}</div>
         <div class="answer" id="ans-{{item.no}}">{{item.a}}</div>
-        <canvas width="160" height="32"></canvas>
+        <canvas width="180" height="36"></canvas>
 
         <!-- 右（21〜40） -->
         <div>{{item2.no}}.</div>
         <div>{{item2.q}}</div>
         <div class="answer" id="ans-{{item2.no}}">{{item2.a}}</div>
-        <canvas width="160" height="32"></canvas>
+        <canvas width="180" height="36"></canvas>
     </div>
 
     {% endfor %}
@@ -468,6 +480,7 @@ document.querySelectorAll("canvas").forEach(c=>{
 
   c.addEventListener("pointerdown", e=>{
     e.preventDefault();
+    e.stopPropagation();   // ★ これが効く
     drawing = true;
     c.setPointerCapture(e.pointerId);
 
@@ -475,6 +488,7 @@ document.querySelectorAll("canvas").forEach(c=>{
     ctx.beginPath();
     ctx.moveTo(p.x, p.y);
   });
+
 
   c.addEventListener("pointermove", e=>{
     if(!drawing) return;
