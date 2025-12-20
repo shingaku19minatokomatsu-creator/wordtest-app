@@ -327,20 +327,21 @@ html, body {
 .item {
   display: grid;
   grid-template-columns:
-    8mm
-    6fr        /* 問題 */
-    2fr        /* 解答 */
-    190px      /* canvas（少し広げる） */
-    8mm
-    6fr
-    2fr
+    44px                 /* 番号 */
+    minmax(220px, 1fr)   /* 問題 */
+    minmax(120px, 160px) /* 解答 */
+    190px                /* canvas */
+    44px
+    minmax(220px, 1fr)
+    minmax(120px, 160px)
     190px;
 
-  height: 32px;          /* ★ 高さも少し余裕 */
+  height: 40px;
   align-items: center;
   font-size: 13px;
   box-sizing: border-box;
 }
+
 
 .answer {
   min-width: 0;
@@ -350,12 +351,23 @@ html, body {
 
   visibility: hidden;
 
-  font-size: 11px;          /* 通常 */
+  font-size: 11px;
   line-height: 1.2;
 
-  white-space: normal;      /* 折り返し */
+  white-space: normal;
   word-break: break-word;
+
+  /* ★ここから追加 */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
+
+.answer.show {
+  visibility: visible;
+}
+
 .answer.show {
   visibility: visible;
 }
@@ -372,25 +384,28 @@ canvas {
   display: block;
   background: #f2f2f2;
   border: 1px solid #ccc;
-  touch-action: none;
+
+  touch-action: none;     /* ★ canvasだけロック */
+  user-select: none;
   pointer-events: auto;
-  user-select: none;
 }
 
-/* ===== ★追加：item 配下を全部ロック ===== */
-.item,
-.item * {
-  touch-action: none;   /* ← タブレットでの選択・スクロール完全防止 */
-  user-select: none;
+.item {
+  user-select: none;      /* 文字選択防止だけ */
 }
 
+/* ★ item * は消す */
 
-
+.small-text {
+  font-size: 9px;
+  line-height: 1.1;
+}
 
 /* ===== 印刷時 ===== */
 @media print {
   button { display: none; }
 }
+
 </style>
 </head>
 
@@ -478,9 +493,14 @@ document.querySelectorAll("canvas").forEach(c=>{
     };
   }
 
+  c.addEventListener("touchstart", e=>{
+    e.preventDefault();
+  }, { passive: false });
+
   c.addEventListener("pointerdown", e=>{
     e.preventDefault();
-    e.stopPropagation();   // ★ これが効く
+    e.stopPropagation();
+
     drawing = true;
     c.setPointerCapture(e.pointerId);
 
@@ -489,19 +509,14 @@ document.querySelectorAll("canvas").forEach(c=>{
     ctx.moveTo(p.x, p.y);
   });
 
-
   c.addEventListener("pointermove", e=>{
     if(!drawing) return;
     e.preventDefault();
 
     const p = getPos(e);
-    if(mode === "eraser"){
-      ctx.clearRect(p.x-4, p.y-4, 8, 8);
-    }else{
-      ctx.strokeStyle = color;
-      ctx.lineTo(p.x, p.y);
-      ctx.stroke();
-    }
+    ctx.strokeStyle = color;
+    ctx.lineTo(p.x, p.y);
+    ctx.stroke();
   });
 
   c.addEventListener("pointerup", e=>{
@@ -513,6 +528,14 @@ document.querySelectorAll("canvas").forEach(c=>{
     drawing = false;
   });
 });
+
+document.querySelectorAll('.answer, .item > div:nth-child(2), .item > div:nth-child(6)')
+  .forEach(el=>{
+    if(el.textContent.length > 30){
+      el.classList.add('small-text');
+    }
+  });
+
 </script>
 
 
