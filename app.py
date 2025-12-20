@@ -331,27 +331,12 @@ html, body {
 
   body {
     width: 297mm;
-    height: auto;
+    height: auto;        /* ★ 固定しない */
     margin: 0;
     padding: 0;
   }
-
-  .item {
-    height: 36px;
-    font-size: 11px;
-  }
-
-  canvas {
-    height: 28px;
-    opacity: 0.25;          /* ★ ここを追加 */
-    background: #fafafa;    /* ★ ほぼ白 */
-    border-color: #ddd;     /* ★ 枠を薄く */
-  }
-
-  button {
-    display: none;
-  }
 }
+
 
 
 
@@ -509,48 +494,43 @@ function toggleAll(){
     .forEach(a => a.classList.toggle('show'));
 }
 
-const dpr = window.devicePixelRatio || 1;
 
 document.querySelectorAll("canvas").forEach(c=>{
-  const rect = c.getBoundingClientRect();
+  const ratio = window.devicePixelRatio || 1;
 
-  // ★ 内部解像度を DPR 倍にする
-  c.width  = rect.width  * dpr;
-  c.height = rect.height * dpr;
+  // 見た目サイズ
+  const cssWidth  = c.width;
+  const cssHeight = c.height;
+
+  // 内部解像度を倍率アップ
+  c.width  = cssWidth  * ratio;
+  c.height = cssHeight * ratio;
+
+  // 見た目サイズは維持
+  c.style.width  = cssWidth + "px";
+  c.style.height = cssHeight + "px";
 
   const ctx = c.getContext("2d");
-
-  // ★ 座標系を戻す（超重要）
-  ctx.scale(dpr, dpr);
+  ctx.scale(ratio, ratio);   // ★ 最重要
 
   let drawing = false;
 
-  // ★ ペン設定（見た目は変わらない）
-  ctx.lineWidth = 0.6;
+  ctx.lineWidth = 0.6;       // ← そのままでOK
   ctx.lineCap   = "round";
   ctx.lineJoin  = "round";
-  ctx.strokeStyle = color;
 
   function getPos(e){
-    const r = c.getBoundingClientRect();
+    const rect = c.getBoundingClientRect();
     return {
-      x: e.clientX - r.left,
-      y: e.clientY - r.top
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top
     };
   }
 
-  // iPad 長押し防止
-  c.addEventListener("touchstart", e=>{
-    e.preventDefault();
-  }, { passive: false });
-
   c.addEventListener("pointerdown", e=>{
     e.preventDefault();
-    e.stopPropagation();
-
     drawing = true;
     c.setPointerCapture(e.pointerId);
-
     const p = getPos(e);
     ctx.beginPath();
     ctx.moveTo(p.x, p.y);
@@ -559,7 +539,6 @@ document.querySelectorAll("canvas").forEach(c=>{
   c.addEventListener("pointermove", e=>{
     if(!drawing) return;
     e.preventDefault();
-
     const p = getPos(e);
 
     if(mode === "eraser"){
@@ -571,15 +550,15 @@ document.querySelectorAll("canvas").forEach(c=>{
     }
   });
 
-  c.addEventListener("pointerup", e=>{
+  c.addEventListener("pointerup", ()=>{
     drawing = false;
-    c.releasePointerCapture(e.pointerId);
   });
 
   c.addEventListener("pointercancel", ()=>{
     drawing = false;
   });
 });
+
 
 document.querySelectorAll('.answer, .item > div:nth-child(2), .item > div:nth-child(6)')
   .forEach(el=>{
