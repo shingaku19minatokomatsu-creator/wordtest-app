@@ -321,10 +321,12 @@ body {
 
 .item {
   display: grid;
-  grid-template-columns: 10mm 1fr auto;
+  grid-template-columns: 10mm 1fr 30mm 50mm;
   align-items: center;
   font-size: 13px;
+  overflow: hidden;
 }
+
 
 .answer {
   font-weight: bold;
@@ -335,12 +337,11 @@ body {
 .hidden { display: none; }
 
 canvas {
-  width: 180mm;
-  height: 30mm;
   background: #f2f2f2;
   border: 1px solid #ccc;
-  margin-left: 3mm;
+  touch-action: none;   /* ★ スクロール完全停止 */
 }
+
 
 /* ===== 印刷時 ===== */
 @media print {
@@ -381,8 +382,8 @@ canvas {
       <div>{{item.no}}.</div>
       <div>{{item.q}}</div>
       <div>
-        <span id=\"ans-{{item.no}}\" class=\"answer hidden\">{{item.a}}</span>
-        <canvas></canvas>
+        <div class="answer hidden" id="ans-{{item.no}}">{{item.a}}</div>
+        <canvas class="ans-canvas" width="180" height="32"></canvas>
       </div>
     </div>
   {% endfor %}
@@ -412,7 +413,6 @@ function toggleAll(){
 let mode = 'pen';
 let penColor = 'black';
 let penSize = 2;
-let allowFinger = true;
 
 function setMode(m){ mode = m; }
 function setColor(c){ penColor = c; }
@@ -420,8 +420,7 @@ function setSize(s){ penSize = s; }
 
 function clearAll(){
   document.querySelectorAll('canvas').forEach(c=>{
-    const ctx = c.getContext('2d');
-    ctx.clearRect(0,0,c.width,c.height);
+    c.getContext('2d').clearRect(0,0,c.width,c.height);
   });
 }
 
@@ -430,7 +429,6 @@ document.querySelectorAll('canvas').forEach(c=>{
   let drawing = false;
 
   c.addEventListener('pointerdown', e=>{
-    if(!allowFinger && e.pointerType === 'touch') return;
     drawing = true;
     ctx.beginPath();
     ctx.moveTo(e.offsetX, e.offsetY);
@@ -451,6 +449,7 @@ document.querySelectorAll('canvas').forEach(c=>{
   window.addEventListener('pointerup', ()=> drawing = false);
 });
 </script>
+
 
 
 </body>
