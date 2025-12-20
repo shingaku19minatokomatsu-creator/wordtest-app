@@ -134,7 +134,7 @@ button:hover {
 <body>
 
 <h2>単語テスト</h2>
-<div class="note">※「表示」を押すと test.pdf（問題→解答）が開きます。</div>
+<div class="note">※「印刷用」を押すと test.pdf（問題→解答）が開きます。</div>
 
 <form id="form" onsubmit="return doGenerate(event)">
   <div class="row">
@@ -157,8 +157,14 @@ button:hover {
   </div>
 
   <div class="row">
-    <button type="submit">表示</button>
+    <button type="submit">印刷用</button>
   </div>
+  
+  <div class="row">
+    <button type="button" onclick="doHtmlTest()">テスト</button>
+  </div>
+
+
 </form>
 
 <script>
@@ -174,9 +180,9 @@ async function doGenerate(e){
     return false;
   }
 
-  try {
-    const win = window.open("about:blank", "_blank");
+  const win = window.open("about:blank", "_blank");
 
+  try {
     const res = await fetch("/generate", {
       method: "POST",
       headers: {"Content-Type":"application/json"},
@@ -185,6 +191,7 @@ async function doGenerate(e){
 
     if(!res.ok){
       const tx = await res.text();
+      win.close();
       alert("エラー: " + tx);
       return false;
     }
@@ -192,13 +199,53 @@ async function doGenerate(e){
     const data = await res.json();
     win.location.href = data.pdf_url;
 
-  }catch(err){
+  } catch(err){
+    win.close();
     alert("通信エラー: " + err);
   }
 
   return false;
 }
+
+
+async function doHtmlTest(){
+  const sheet = document.getElementById('sheet').value;
+  const start = document.getElementById('start').value;
+  const end   = document.getElementById('end').value;
+
+  if(!sheet || !start || !end){
+    alert("シート・開始・終了番号が必要です。");
+    return;
+  }
+
+  const win = window.open("about:blank", "_blank");
+
+  try {
+    const res = await fetch("/generate_html_test", {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({sheet, start, end})
+    });
+
+    if(!res.ok){
+      const tx = await res.text();
+      win.close();
+      alert("エラー: " + tx);
+      return;
+    }
+
+    const html = await res.text();
+    win.document.open();
+    win.document.write(html);
+    win.document.close();
+
+  } catch(err){
+    win.close();
+    alert("通信エラー: " + err);
+  }
+}
 </script>
+
 
 </body>
 </html>
@@ -228,6 +275,223 @@ button { background:#007bff; color:#fff; border:none; border-radius:6px; }
 </html>
 """
 
+# ①〜④ HTML版テスト機能 追加コード（PDF完全一致レイアウト版）
+# 既存 app.py に追記する想定
+
+# ①〜④ HTML版テスト機能 追加コード（PDF完全一致レイアウト版）
+# 既存 app.py に追記する想定
+
+HTML_TEST_TEMPLATE = """
+<!doctype html>
+<html>
+<head>
+<meta charset=\"utf-8\">
+<title>単語テスト（HTML）</title>
+<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
+
+<style>
+/* ===== PDF と同寸 ===== */
+@page { size: A4 landscape; margin: 15mm; }
+
+body {
+  font-family: Arial, sans-serif;
+  width: 297mm;
+  height: 210mm;
+  margin: 0 auto;
+}
+
+/* ===== ヘッダ ===== */
+.header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10mm;
+}
+
+/* ===== 2列（PDFと同じ） ===== */
+.columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 15mm;
+}
+
+.col {
+  display: grid;
+  grid-template-rows: repeat(20, 10mm);
+}
+
+.item {
+  display: grid;
+  grid-template-columns: 10mm 1fr auto;
+  align-items: center;
+  font-size: 13px;
+}
+
+.answer {
+  font-weight: bold;
+  color: red;            /* ★ 丸付け用：赤 */
+  opacity: 0.85;         /* ★ 薄め表示 */
+  margin-left: 4mm;
+}
+.hidden { display: none; }
+
+canvas {
+  width: 45mm;
+  height: 8mm;
+  background: #f2f2f2;
+  border: 1px solid #ccc;
+  margin-left: 3mm;
+}
+
+/* ===== 印刷時 ===== */
+@media print {
+  button { display: none; }
+}
+</style>
+</head>
+
+<body>
+
+<div class=\"header\">
+  <div>
+    <h2>shingaku19minato test</h2>
+    <div>words {{sheet}}（{{start}}～{{end}}）</div>
+  </div>
+  <div>
+    name：________________<br>
+    score：________________
+  </div>
+</div>
+
+<div style="margin-bottom:5mm">
+<button onclick="toggleAll()">解答 表示／非表示</button>
+<button onclick="setMode('pen')">✏️ ペン</button>
+<button onclick="setMode('eraser')">🧽 消しゴム</button>
+<button onclick="setColor('black')">⚫ 黒</button>
+<button onclick="setColor('red')">🔴 赤</button>
+<button onclick="setSize(2)">細</button>
+<button onclick="setSize(4)">中</button>
+<button onclick="setSize(6)">太</button>
+<button onclick="clearAll()">🗑 全消し</button>
+</div>
+
+<button onclick=\"toggleAll()\">解答 表示／非表示</button>()\">解答 表示／非表示</button>
+
+<div class=\"columns\">
+  <div class=\"col\">
+  {% for item in items[:20] %}
+    <div class=\"item\">
+      <div>{{item.no}}.</div>
+      <div>{{item.q}}</div>
+      <div>
+        <button onclick=\"toggleOne({{item.no}})\">解答</button>
+        <span id=\"ans-{{item.no}}\" class=\"answer hidden\">{{item.a}}</span>
+        <canvas></canvas>
+      </div>
+    </div>
+  {% endfor %}
+  </div>
+
+  <div class=\"col\">
+  {% for item in items[20:] %}
+    <div class=\"item\">
+      <div>{{item.no}}.</div>
+      <div>{{item.q}}</div>
+      <div>
+        <button onclick=\"toggleOne({{item.no}})\">解答</button>
+        <span id=\"ans-{{item.no}}\" class=\"answer hidden\">{{item.a}}</span>
+        <canvas></canvas>
+      </div>
+    </div>
+  {% endfor %}
+  </div>
+</div>
+
+<script>
+function toggleOne(no){
+  document.getElementById('ans-'+no).classList.toggle('hidden');
+}
+function toggleAll(){
+  document.querySelectorAll('.answer').forEach(a=>a.classList.toggle('hidden'));
+}
+
+// ===== canvas 手書き（ペン／消しゴム／色） =====
+let mode = 'pen';
+let penColor = 'black';
+let penSize = 2;
+let allowFinger = true; // ★ 手書き許可（指／ペン両対応）
+
+function setMode(m){ mode = m; }
+function setColor(c){ penColor = c; }
+function setSize(s){ penSize = s; }
+
+function clearAll(){
+  document.querySelectorAll('canvas').forEach(c=>{
+    const ctx=c.getContext('2d');
+    ctx.clearRect(0,0,c.width,c.height);
+  });
+}
+
+document.querySelectorAll('canvas').forEach(c=>{
+  const ctx=c.getContext('2d');
+  let draw=false;
+
+  c.addEventListener('pointerdown',e=>{
+    if(!allowFinger && e.pointerType==='touch') return;
+    draw=true;
+    ctx.beginPath();
+    ctx.moveTo(e.offsetX,e.offsetY);
+  });
+
+  c.addEventListener('pointermove',e=>{
+    if(!draw) return;
+    if(mode==='eraser'){
+      ctx.clearRect(e.offsetX-8,e.offsetY-8,16,16);
+    }else{
+      ctx.strokeStyle = penColor;
+      ctx.lineWidth = penSize;
+      ctx.lineTo(e.offsetX,e.offsetY);
+      ctx.stroke();
+    }
+  });
+
+  c.addEventListener('pointerup',()=>draw=false);
+});
+    ctx.clearRect(0,0,c.width,c.height);
+  });
+}
+
+document.querySelectorAll('canvas').forEach(c=>{
+  const ctx=c.getContext('2d');
+  let draw=false;
+  ctx.lineWidth=2;
+
+  c.addEventListener('pointerdown',e=>{
+    draw=true;
+    ctx.beginPath();
+    ctx.moveTo(e.offsetX,e.offsetY);
+  });
+
+  c.addEventListener('pointermove',e=>{
+    if(!draw) return;
+    if(mode==='eraser'){
+      ctx.clearRect(e.offsetX-6,e.offsetY-6,12,12);
+    }else{
+      ctx.strokeStyle = penColor;
+      ctx.lineTo(e.offsetX,e.offsetY);
+      ctx.stroke();
+    }
+  });
+
+  c.addEventListener('pointerup',()=>draw=false);
+});
+</script>
+
+</body>
+</html>
+"""
+
+
+
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
@@ -254,6 +518,8 @@ def require_login():
 
     if not session.get("login"):
         return redirect("/login")
+    
+
 
 
 
@@ -556,47 +822,28 @@ def serve_pdf(filename):
     resp.headers["Content-Disposition"] = 'inline; filename="test.pdf"'
     return resp
 
+@app.route("/generate_html_test", methods=["POST"])
+def generate_html_test():
+    data = request.get_json()
+    sheet = data["sheet"]
+    start = int(data["start"])
+    end = int(data["end"])
+
+
+    rows = load_sheet_rows(EXCEL_PATH, sheet)
+    items = pick40(rows, start, end)
+
+
+    return render_template_string(
+    HTML_TEST_TEMPLATE,
+    items=items,
+    sheet=sheet,
+    start=start,
+    end=end
+    )
+
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 3710))
     app.run(host="0.0.0.0", port=port)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
