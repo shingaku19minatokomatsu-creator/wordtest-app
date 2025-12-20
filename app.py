@@ -324,11 +324,32 @@ html, body {
 
 /* ===== 印刷時のみ A4 ===== */
 @media print {
-  @page { size: A4 landscape; margin: 15mm; }
+  @page {
+    size: A4 landscape;
+    margin: 15mm;
+  }
 
   body {
     width: 297mm;
-    height: 210mm;
+    height: auto;
+    margin: 0;
+    padding: 0;
+  }
+
+  .item {
+    height: 36px;
+    font-size: 11px;
+  }
+
+  canvas {
+    height: 28px;
+    opacity: 0.25;          /* ★ ここを追加 */
+    background: #fafafa;    /* ★ ほぼ白 */
+    border-color: #ddd;     /* ★ 枠を薄く */
+  }
+
+  button {
+    display: none;
   }
 }
 
@@ -441,9 +462,6 @@ canvas {
 <button onclick="setMode('eraser')">🧽 消しゴム</button>
 <button onclick="clearAll()">🗑 全消し</button>
 <button onclick="window.print()">🖨 印刷</button>
-<button onclick="window.print()">💾 保存（PDF）</button>
-
-
 
 </div>
 
@@ -491,24 +509,37 @@ function toggleAll(){
     .forEach(a => a.classList.toggle('show'));
 }
 
+const dpr = window.devicePixelRatio || 1;
 
 document.querySelectorAll("canvas").forEach(c=>{
+  const rect = c.getBoundingClientRect();
+
+  // ★ 内部解像度を DPR 倍にする
+  c.width  = rect.width  * dpr;
+  c.height = rect.height * dpr;
+
   const ctx = c.getContext("2d");
+
+  // ★ 座標系を戻す（超重要）
+  ctx.scale(dpr, dpr);
+
   let drawing = false;
 
-  ctx.lineWidth = 0.6;       // 細字固定
-  ctx.lineCap = "round";      // ペン感
-  ctx.lineJoin = "round";
+  // ★ ペン設定（見た目は変わらない）
+  ctx.lineWidth = 0.6;
+  ctx.lineCap   = "round";
+  ctx.lineJoin  = "round";
   ctx.strokeStyle = color;
 
   function getPos(e){
-    const rect = c.getBoundingClientRect();
+    const r = c.getBoundingClientRect();
     return {
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top
+      x: e.clientX - r.left,
+      y: e.clientY - r.top
     };
   }
 
+  // iPad 長押し防止
   c.addEventListener("touchstart", e=>{
     e.preventDefault();
   }, { passive: false });
@@ -532,14 +563,13 @@ document.querySelectorAll("canvas").forEach(c=>{
     const p = getPos(e);
 
     if(mode === "eraser"){
-        ctx.clearRect(p.x - 6, p.y - 6, 12, 12);   // ★ 消しゴム
+      ctx.clearRect(p.x - 6, p.y - 6, 12, 12);
     }else{
-        ctx.strokeStyle = color;
-        ctx.lineTo(p.x, p.y);
-        ctx.stroke();                             // ★ ペン
+      ctx.strokeStyle = color;
+      ctx.lineTo(p.x, p.y);
+      ctx.stroke();
     }
   });
-
 
   c.addEventListener("pointerup", e=>{
     drawing = false;
