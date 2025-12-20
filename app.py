@@ -442,6 +442,8 @@ canvas {
 <button onclick="clearAll()">🗑 全消し</button>
 <button onclick="window.print()">🖨 印刷</button>
 
+
+
 </div>
 
     {% for i in range(20) %}
@@ -490,19 +492,11 @@ function toggleAll(){
 
 
 document.querySelectorAll("canvas").forEach(c=>{
-  const dpr = window.devicePixelRatio || 1;
-
-  const cssW = c.width;
-  const cssH = c.height;
-
-  c.width  = cssW * dpr;
-  c.height = cssH * dpr;
-
   const ctx = c.getContext("2d");
   let drawing = false;
 
-  ctx.lineWidth = 0.6 * dpr;
-  ctx.lineCap = "round";
+  ctx.lineWidth = 0.6;       // 細字固定
+  ctx.lineCap = "round";      // ペン感
   ctx.lineJoin = "round";
   ctx.strokeStyle = color;
 
@@ -527,7 +521,7 @@ document.querySelectorAll("canvas").forEach(c=>{
 
     const p = getPos(e);
     ctx.beginPath();
-    ctx.moveTo(p.x * dpr, p.y * dpr);
+    ctx.moveTo(p.x, p.y);
   });
 
   c.addEventListener("pointermove", e=>{
@@ -537,18 +531,14 @@ document.querySelectorAll("canvas").forEach(c=>{
     const p = getPos(e);
 
     if(mode === "eraser"){
-      ctx.clearRect(
-        (p.x - 6) * dpr,
-        (p.y - 6) * dpr,
-        12 * dpr,
-        12 * dpr
-      );
+        ctx.clearRect(p.x - 6, p.y - 6, 12, 12);   // ★ 消しゴム
     }else{
-      ctx.strokeStyle = color;
-      ctx.lineTo(p.x * dpr, p.y * dpr);
-      ctx.stroke();
+        ctx.strokeStyle = color;
+        ctx.lineTo(p.x, p.y);
+        ctx.stroke();                             // ★ ペン
     }
   });
+
 
   c.addEventListener("pointerup", e=>{
     drawing = false;
@@ -559,7 +549,6 @@ document.querySelectorAll("canvas").forEach(c=>{
     drawing = false;
   });
 });
-
 
 document.querySelectorAll('.answer, .item > div:nth-child(2), .item > div:nth-child(6)')
   .forEach(el=>{
