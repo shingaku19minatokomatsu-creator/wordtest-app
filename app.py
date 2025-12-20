@@ -324,19 +324,13 @@ html, body {
 
 /* ===== 印刷時のみ A4 ===== */
 @media print {
-  @page {
-    size: A4 landscape;
-    margin: 15mm;
-  }
+  @page { size: A4 landscape; margin: 15mm; }
 
   body {
     width: 297mm;
-    height: auto;        /* ★ 固定しない */
-    margin: 0;
-    padding: 0;
+    height: 210mm;
   }
 }
-
 
 
 
@@ -496,28 +490,21 @@ function toggleAll(){
 
 
 document.querySelectorAll("canvas").forEach(c=>{
-  const ratio = window.devicePixelRatio || 1;
+  const dpr = window.devicePixelRatio || 1;
 
-  // 見た目サイズ
-  const cssWidth  = c.width;
-  const cssHeight = c.height;
+  const cssW = c.width;
+  const cssH = c.height;
 
-  // 内部解像度を倍率アップ
-  c.width  = cssWidth  * ratio;
-  c.height = cssHeight * ratio;
-
-  // 見た目サイズは維持
-  c.style.width  = cssWidth + "px";
-  c.style.height = cssHeight + "px";
+  c.width  = cssW * dpr;
+  c.height = cssH * dpr;
 
   const ctx = c.getContext("2d");
-  ctx.scale(ratio, ratio);   // ★ 最重要
-
   let drawing = false;
 
-  ctx.lineWidth = 0.6;       // ← そのままでOK
-  ctx.lineCap   = "round";
-  ctx.lineJoin  = "round";
+  ctx.lineWidth = 0.6 * dpr;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  ctx.strokeStyle = color;
 
   function getPos(e){
     const rect = c.getBoundingClientRect();
@@ -527,31 +514,45 @@ document.querySelectorAll("canvas").forEach(c=>{
     };
   }
 
+  c.addEventListener("touchstart", e=>{
+    e.preventDefault();
+  }, { passive: false });
+
   c.addEventListener("pointerdown", e=>{
     e.preventDefault();
+    e.stopPropagation();
+
     drawing = true;
     c.setPointerCapture(e.pointerId);
+
     const p = getPos(e);
     ctx.beginPath();
-    ctx.moveTo(p.x, p.y);
+    ctx.moveTo(p.x * dpr, p.y * dpr);
   });
 
   c.addEventListener("pointermove", e=>{
     if(!drawing) return;
     e.preventDefault();
+
     const p = getPos(e);
 
     if(mode === "eraser"){
-      ctx.clearRect(p.x - 6, p.y - 6, 12, 12);
+      ctx.clearRect(
+        (p.x - 6) * dpr,
+        (p.y - 6) * dpr,
+        12 * dpr,
+        12 * dpr
+      );
     }else{
       ctx.strokeStyle = color;
-      ctx.lineTo(p.x, p.y);
+      ctx.lineTo(p.x * dpr, p.y * dpr);
       ctx.stroke();
     }
   });
 
-  c.addEventListener("pointerup", ()=>{
+  c.addEventListener("pointerup", e=>{
     drawing = false;
+    c.releasePointerCapture(e.pointerId);
   });
 
   c.addEventListener("pointercancel", ()=>{
