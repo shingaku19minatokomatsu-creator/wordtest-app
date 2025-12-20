@@ -335,8 +335,8 @@ body {
 .hidden { display: none; }
 
 canvas {
-  width: 45mm;
-  height: 8mm;
+  width: 180mm;
+  height: 30mm;
   background: #f2f2f2;
   border: 1px solid #ccc;
   margin-left: 3mm;
@@ -374,8 +374,6 @@ canvas {
 <button onclick="clearAll()">🗑 全消し</button>
 </div>
 
-<button onclick=\"toggleAll()\">解答 表示／非表示</button>()\">解答 表示／非表示</button>
-
 <div class=\"columns\">
   <div class=\"col\">
   {% for item in items[:20] %}
@@ -383,7 +381,6 @@ canvas {
       <div>{{item.no}}.</div>
       <div>{{item.q}}</div>
       <div>
-        <button onclick=\"toggleOne({{item.no}})\">解答</button>
         <span id=\"ans-{{item.no}}\" class=\"answer hidden\">{{item.a}}</span>
         <canvas></canvas>
       </div>
@@ -397,7 +394,6 @@ canvas {
       <div>{{item.no}}.</div>
       <div>{{item.q}}</div>
       <div>
-        <button onclick=\"toggleOne({{item.no}})\">解答</button>
         <span id=\"ans-{{item.no}}\" class=\"answer hidden\">{{item.a}}</span>
         <canvas></canvas>
       </div>
@@ -407,18 +403,16 @@ canvas {
 </div>
 
 <script>
-function toggleOne(no){
-  document.getElementById('ans-'+no).classList.toggle('hidden');
-}
 function toggleAll(){
-  document.querySelectorAll('.answer').forEach(a=>a.classList.toggle('hidden'));
+  document.querySelectorAll('.answer')
+    .forEach(a => a.classList.toggle('hidden'));
 }
 
-// ===== canvas 手書き（ペン／消しゴム／色） =====
+// ===== canvas 手書き =====
 let mode = 'pen';
 let penColor = 'black';
 let penSize = 2;
-let allowFinger = true; // ★ 手書き許可（指／ペン両対応）
+let allowFinger = true;
 
 function setMode(m){ mode = m; }
 function setColor(c){ penColor = c; }
@@ -426,65 +420,38 @@ function setSize(s){ penSize = s; }
 
 function clearAll(){
   document.querySelectorAll('canvas').forEach(c=>{
-    const ctx=c.getContext('2d');
+    const ctx = c.getContext('2d');
     ctx.clearRect(0,0,c.width,c.height);
   });
 }
 
 document.querySelectorAll('canvas').forEach(c=>{
-  const ctx=c.getContext('2d');
-  let draw=false;
+  const ctx = c.getContext('2d');
+  let drawing = false;
 
-  c.addEventListener('pointerdown',e=>{
-    if(!allowFinger && e.pointerType==='touch') return;
-    draw=true;
+  c.addEventListener('pointerdown', e=>{
+    if(!allowFinger && e.pointerType === 'touch') return;
+    drawing = true;
     ctx.beginPath();
-    ctx.moveTo(e.offsetX,e.offsetY);
+    ctx.moveTo(e.offsetX, e.offsetY);
   });
 
-  c.addEventListener('pointermove',e=>{
-    if(!draw) return;
-    if(mode==='eraser'){
-      ctx.clearRect(e.offsetX-8,e.offsetY-8,16,16);
+  c.addEventListener('pointermove', e=>{
+    if(!drawing) return;
+    if(mode === 'eraser'){
+      ctx.clearRect(e.offsetX-6, e.offsetY-6, 12, 12);
     }else{
       ctx.strokeStyle = penColor;
       ctx.lineWidth = penSize;
-      ctx.lineTo(e.offsetX,e.offsetY);
+      ctx.lineTo(e.offsetX, e.offsetY);
       ctx.stroke();
     }
   });
 
-  c.addEventListener('pointerup',()=>draw=false);
-});
-    ctx.clearRect(0,0,c.width,c.height);
-  });
-}
-
-document.querySelectorAll('canvas').forEach(c=>{
-  const ctx=c.getContext('2d');
-  let draw=false;
-  ctx.lineWidth=2;
-
-  c.addEventListener('pointerdown',e=>{
-    draw=true;
-    ctx.beginPath();
-    ctx.moveTo(e.offsetX,e.offsetY);
-  });
-
-  c.addEventListener('pointermove',e=>{
-    if(!draw) return;
-    if(mode==='eraser'){
-      ctx.clearRect(e.offsetX-6,e.offsetY-6,12,12);
-    }else{
-      ctx.strokeStyle = penColor;
-      ctx.lineTo(e.offsetX,e.offsetY);
-      ctx.stroke();
-    }
-  });
-
-  c.addEventListener('pointerup',()=>draw=false);
+  window.addEventListener('pointerup', ()=> drawing = false);
 });
 </script>
+
 
 </body>
 </html>
