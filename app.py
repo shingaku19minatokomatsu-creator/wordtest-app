@@ -290,13 +290,23 @@ HTML_TEST_TEMPLATE = """
 <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
 
 <style>
-/* ===== PDF と同寸 ===== */
-@page { size: A4 landscape; margin: 15mm; }
-
+/* ===== 画面表示 ===== */
 body {
   font-family: Arial, sans-serif;
   margin: 0;
+  max-width: 100%;
 }
+
+/* ===== 印刷時のみ A4 ===== */
+@media print {
+  @page { size: A4 landscape; margin: 15mm; }
+
+  body {
+    width: 297mm;
+    height: 210mm;
+  }
+}
+
 
 
 /* ===== ヘッダ ===== */
@@ -311,30 +321,33 @@ body {
 .item {
   display: grid;
   grid-template-columns:
-    8mm    /* 左番号 */
-    1fr    /* 左問題 */
-    22mm   /* 左解答 */
-    42mm   /* 左canvas */
-    8mm    /* 右番号 */
-    1fr    /* 右問題 */
-    22mm   /* 右解答 */
-    42mm;  /* 右canvas */
+    8mm
+    1fr
+    22mm
+    170px
+    8mm
+    1fr
+    22mm
+    170px;
 
   align-items: center;
   height: 10mm;
   font-size: 13px;
-  user-select: none;   /* ← 選択・揺れ防止 */
+  user-select: none;
 }
 
 
 
+
+
 .answer {
+  min-width: 22mm;   /* ★ これ */
   font-weight: bold;
   color: red;
   opacity: 0.85;
-  margin-left: 4mm;
-
-  visibility: hidden;   /* ★ ここが重要 */
+  visibility: hidden;
+  font-size: 10px;
+  line-height: 1.2;
 }
 .answer.show {
   visibility: visible;
@@ -346,6 +359,7 @@ canvas {
   background: #f2f2f2;
   border: 1px solid #ccc;
   touch-action: none;
+  pointer-events: auto;
   user-select: none;
 }
 
@@ -423,33 +437,54 @@ document.querySelectorAll("canvas").forEach(c=>{
   const ctx = c.getContext("2d");
   let drawing = false;
 
-  ctx.lineWidth = 1.2;        // ★ 細字固定
-  ctx.lineCap = "butt";       // ★ ペン感
+  ctx.lineWidth = 1.2;       // 細字固定
+  ctx.lineCap = "butt";      // ペン感
+  ctx.lineJoin = "miter";
   ctx.strokeStyle = color;
 
+  function getPos(e){
+    const rect = c.getBoundingClientRect();
+    return {
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top
+    };
+  }
+
   c.addEventListener("pointerdown", e=>{
+    e.preventDefault();
     drawing = true;
+    c.setPointerCapture(e.pointerId);
+
+    const p = getPos(e);
     ctx.beginPath();
-    ctx.moveTo(e.offsetX, e.offsetY);
+    ctx.moveTo(p.x, p.y);
   });
 
   c.addEventListener("pointermove", e=>{
     if(!drawing) return;
+    e.preventDefault();
 
+    const p = getPos(e);
     if(mode === "eraser"){
-      ctx.clearRect(e.offsetX-4, e.offsetY-4, 8, 8);
+      ctx.clearRect(p.x-4, p.y-4, 8, 8);
     }else{
       ctx.strokeStyle = color;
-      ctx.lineTo(e.offsetX, e.offsetY);
+      ctx.lineTo(p.x, p.y);
       ctx.stroke();
     }
   });
 
-    document.addEventListener("pointerup", ()=>{
+  c.addEventListener("pointerup", e=>{
     drawing = false;
-    });
+    c.releasePointerCapture(e.pointerId);
+  });
+
+  c.addEventListener("pointercancel", ()=>{
+    drawing = false;
+  });
 });
 </script>
+
 
 
 
