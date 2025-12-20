@@ -295,10 +295,9 @@ HTML_TEST_TEMPLATE = """
 
 body {
   font-family: Arial, sans-serif;
-  width: 297mm;
-  height: 210mm;
-  margin: 0 auto;
+  margin: 0;
 }
+
 
 /* ===== ヘッダ ===== */
 .header {
@@ -308,39 +307,48 @@ body {
 }
 
 /* ===== 2列（PDFと同じ） ===== */
-.columns {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  column-gap: 15mm;
-}
-
-.col {
-  display: grid;
-  grid-template-rows: repeat(20, 10mm);
-}
 
 .item {
   display: grid;
-  grid-template-columns: 10mm 1fr 30mm 50mm;
+  grid-template-columns:
+    8mm    /* 左番号 */
+    1fr    /* 左問題 */
+    22mm   /* 左解答 */
+    42mm   /* 左canvas */
+    8mm    /* 右番号 */
+    1fr    /* 右問題 */
+    22mm   /* 右解答 */
+    42mm;  /* 右canvas */
+
   align-items: center;
+  height: 10mm;
   font-size: 13px;
-  overflow: hidden;
+  user-select: none;   /* ← 選択・揺れ防止 */
 }
+
 
 
 .answer {
   font-weight: bold;
-  color: red;            /* ★ 丸付け用：赤 */
-  opacity: 0.85;         /* ★ 薄め表示 */
+  color: red;
+  opacity: 0.85;
   margin-left: 4mm;
+
+  visibility: hidden;   /* ★ ここが重要 */
 }
-.hidden { display: none; }
+.answer.show {
+  visibility: visible;
+}
+
 
 canvas {
+  display: block;
   background: #f2f2f2;
   border: 1px solid #ccc;
-  touch-action: none;   /* ★ スクロール完全停止 */
+  touch-action: none;
+  user-select: none;
 }
+
 
 
 /* ===== 印刷時 ===== */
@@ -365,90 +373,84 @@ canvas {
 
 <div style="margin-bottom:5mm">
 <button onclick="toggleAll()">解答 表示／非表示</button>
-<button onclick="setMode('pen')">✏️ ペン</button>
-<button onclick="setMode('eraser')">🧽 消しゴム</button>
 <button onclick="setColor('black')">⚫ 黒</button>
 <button onclick="setColor('red')">🔴 赤</button>
-<button onclick="setSize(2)">細</button>
-<button onclick="setSize(4)">中</button>
-<button onclick="setSize(6)">太</button>
+<button onclick="setMode('eraser')">🧽 消しゴム</button>
 <button onclick="clearAll()">🗑 全消し</button>
+
 </div>
 
-<div class=\"columns\">
-  <div class=\"col\">
-  {% for item in items[:20] %}
-    <div class=\"item\">
-      <div>{{item.no}}.</div>
-      <div>{{item.q}}</div>
-      <div>
-        <div class="answer hidden" id="ans-{{item.no}}">{{item.a}}</div>
-        <canvas class="ans-canvas" width="180" height="32"></canvas>
-      </div>
-    </div>
-  {% endfor %}
-  </div>
+    {% for i in range(20) %}
+    {% set item  = items[i] %}
+    {% set item2 = items[i+20] %}
 
-  <div class=\"col\">
-  {% for item in items[20:] %}
-    <div class=\"item\">
-      <div>{{item.no}}.</div>
-      <div>{{item.q}}</div>
-      <div>
-        <span id=\"ans-{{item.no}}\" class=\"answer hidden\">{{item.a}}</span>
-        <canvas></canvas>
-      </div>
+    <div class="item">
+        <!-- 左（1〜20） -->
+        <div>{{item.no}}.</div>
+        <div>{{item.q}}</div>
+        <div class="answer" id="ans-{{item.no}}">{{item.a}}</div>
+        <canvas width="160" height="32"></canvas>
+
+        <!-- 右（21〜40） -->
+        <div>{{item2.no}}.</div>
+        <div>{{item2.q}}</div>
+        <div class="answer" id="ans-{{item2.no}}">{{item2.a}}</div>
+        <canvas width="160" height="32"></canvas>
     </div>
-  {% endfor %}
-  </div>
-</div>
+
+    {% endfor %}
 
 <script>
-function toggleAll(){
-  document.querySelectorAll('.answer')
-    .forEach(a => a.classList.toggle('hidden'));
+let mode = "pen";
+let color = "#000";
+
+function setColor(c){
+  color = (c === "red") ? "#d00" : "#000";
+  mode = "pen";
 }
 
-// ===== canvas 手書き =====
-let mode = 'pen';
-let penColor = 'black';
-let penSize = 2;
-
-function setMode(m){ mode = m; }
-function setColor(c){ penColor = c; }
-function setSize(s){ penSize = s; }
+function setMode(m){
+  mode = m;
+}
 
 function clearAll(){
-  document.querySelectorAll('canvas').forEach(c=>{
-    c.getContext('2d').clearRect(0,0,c.width,c.height);
+  document.querySelectorAll("canvas").forEach(c=>{
+    c.getContext("2d").clearRect(0,0,c.width,c.height);
   });
 }
 
-document.querySelectorAll('canvas').forEach(c=>{
-  const ctx = c.getContext('2d');
+document.querySelectorAll("canvas").forEach(c=>{
+  const ctx = c.getContext("2d");
   let drawing = false;
 
-  c.addEventListener('pointerdown', e=>{
+  ctx.lineWidth = 1.2;        // ★ 細字固定
+  ctx.lineCap = "butt";       // ★ ペン感
+  ctx.strokeStyle = color;
+
+  c.addEventListener("pointerdown", e=>{
     drawing = true;
     ctx.beginPath();
     ctx.moveTo(e.offsetX, e.offsetY);
   });
 
-  c.addEventListener('pointermove', e=>{
+  c.addEventListener("pointermove", e=>{
     if(!drawing) return;
-    if(mode === 'eraser'){
-      ctx.clearRect(e.offsetX-6, e.offsetY-6, 12, 12);
+
+    if(mode === "eraser"){
+      ctx.clearRect(e.offsetX-4, e.offsetY-4, 8, 8);
     }else{
-      ctx.strokeStyle = penColor;
-      ctx.lineWidth = penSize;
+      ctx.strokeStyle = color;
       ctx.lineTo(e.offsetX, e.offsetY);
       ctx.stroke();
     }
   });
 
-  window.addEventListener('pointerup', ()=> drawing = false);
+    document.addEventListener("pointerup", ()=>{
+    drawing = false;
+    });
 });
 </script>
+
 
 
 
