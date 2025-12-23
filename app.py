@@ -83,13 +83,11 @@ html, body {
     margin: 15mm;
   }
 
-  /* ★ ここが重要：A4指定を消す */
   body {
-    width: auto;
-    height: auto;
-    padding: 0;
+    margin: 0;
   }
 }
+
 
 
 /* スマホ用 */
@@ -110,7 +108,7 @@ html, body {
 </head>
 
 <body>
-
+<div id="print-root">
 <h2>単語テスト</h2>
 <div class="note">※「印刷用」を押すと test.pdf（問題→解答）が開きます。</div>
 
@@ -146,6 +144,34 @@ html, body {
 </form>
 
 <script>
+
+(function () {
+  function fitToA4Landscape() {
+    const root = document.getElementById("print-root");
+    if (!root) return;
+
+    // A4横（px換算：Chrome基準）
+    const A4_W = 1122; // 297mm
+    const A4_H = 793;  // 210mm
+
+    // 実寸
+    const rect = root.getBoundingClientRect();
+
+    // 縦横比を保って縮小
+    const scale = Math.min(
+      A4_W / rect.width,
+      A4_H / rect.height,
+      1
+    );
+
+    root.style.transformOrigin = "top left";
+    root.style.transform = `scale(${scale})`;
+  }
+
+  // 印刷直前
+  window.addEventListener("beforeprint", fitToA4Landscape);
+})();
+
 async function doGenerate(e){
   e.preventDefault();
 
