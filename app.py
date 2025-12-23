@@ -78,59 +78,33 @@ html, body {
 }
 
 @media print {
-  @page {
-    size: A4 landscape;
-    margin: 15mm;
-  }
 
-  body {
-    width: 297mm;
-    height: 210mm;
-    padding: 0;
-  }
-}
-
-
-h2 {
-    font-size: 26px;
-    margin-bottom: 10px;
-}
-
-label {
-    display: block;
-    font-size: 18px;
-    margin-bottom: 4px;
-}
-
-input, select, button {
-    padding: 12px;
-    font-size: 18px;
-    width: 100%;
-    box-sizing: border-box;
-}
-
-.row {
-    margin: 15px 0;
-}
-
-button {
-    background-color: #007bff;
-    color: white;
-    border: none;
-    border-radius: 6px;
+  /* 見出しを少し詰める */
+  h2 {
     font-size: 20px;
-    padding: 14px;
-    cursor: pointer;
-}
+    margin-bottom: 4mm;
+  }
 
-button:hover {
-    background-color: #0056c7;
-}
+  /* フォーム行の縦マージンをmm固定 */
+  .row {
+    margin: 4mm 0;
+  }
 
-.note {
-    color: #666;
-    font-size: 15px;
-    margin-bottom: 10px;
+  label {
+    font-size: 14px;
+    margin-bottom: 2mm;
+  }
+
+  input, select, button {
+    font-size: 14px;
+    padding: 6px;
+  }
+
+  /* 印刷に不要なものは消す */
+  button {
+    display: none;
+  }
+
 }
 
 /* スマホ用 */
