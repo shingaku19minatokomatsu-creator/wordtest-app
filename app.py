@@ -657,7 +657,54 @@ def register():
 
     return render_template("register.html")
 
-    
+
+@app.route("/admin")
+def admin():
+    if session.get("role") != "admin":
+        return redirect("/")
+
+    with get_db() as db:
+        users = db.execute("""
+            SELECT id, username, is_active
+            FROM users
+            WHERE role='student'
+        """).fetchall()
+
+    return render_template("admin.html", users=users)
+
+
+@app.route("/approve/<int:user_id>")
+def approve(user_id):
+    if session.get("role") != "admin":
+        return redirect("/")
+
+    with get_db() as db:
+        db.execute(
+            "UPDATE users SET is_active=1 WHERE id=?",
+            (user_id,)
+        )
+
+    return redirect("/admin")
+
+@app.route("/delete/<int:user_id>")
+def delete(user_id):
+    if session.get("role") != "admin":
+        return redirect("/")
+
+    with get_db() as db:
+        db.execute(
+            "DELETE FROM users WHERE id=?",
+            (user_id,)
+        )
+
+    return redirect("/admin")
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect("/")
+
+
 
 
 
@@ -985,6 +1032,7 @@ def generate_html_test():
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 3710))
     app.run(host="0.0.0.0", port=port)
+
 
 
 
