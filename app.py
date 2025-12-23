@@ -330,13 +330,13 @@ html, body {
     margin: 15mm;
   }
 
-  /* ===== 66%をCSS側で固定 ===== */
+  /* ===== 65%をCSS側で固定 ===== */
   #print-root {
-    transform: scale(0.66);
+    transform: scale(0.65);
     transform-origin: top left;
 
     /* 縮小分の横幅補正（重要） */
-    width: calc(100% / 0.66);
+    width: calc(100% / 0.65);
   }
 
   body {
