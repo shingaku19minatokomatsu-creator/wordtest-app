@@ -330,28 +330,44 @@ html, body {
     margin: 15mm;
   }
 
-  /* 上部UIを詰める */
+  /* ===== ヘッダを限界まで詰める ===== */
   .header {
-    margin-bottom: 5mm;
+    margin-bottom: 4mm;
   }
 
-  div[style*="margin-bottom:5mm"] {
-    margin-bottom: 2mm !important;
+  h2 {
+    font-size: 18px;
+    margin: 0 0 2mm 0;
   }
 
-  /* 行高を下げる（核心） */
-  .item {
-    height: 32px;
+  .header div {
     font-size: 12px;
   }
 
-  canvas {
-    height: 28px;
+  /* ボタン行を消す（高さ回収） */
+  div[style*="margin-bottom:5mm"] {
+    display: none !important;
   }
 
-  /* 印刷に不要な操作UIは消す */
+  /* ===== 核心：20行を成立させる行高 ===== */
+  .item {
+    height: 28px;        /* ← これが限界値 */
+    font-size: 11px;
+  }
+
+  canvas {
+    height: 24px;
+  }
+
+  /* 文字量が多いときの潰れ防止 */
+  .small-text {
+    font-size: 9px;
+    line-height: 1.05;
+  }
+
+  /* 操作UIは全消し */
   button {
-    display: none;
+    display: none !important;
   }
 }
 
