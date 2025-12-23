@@ -324,13 +324,34 @@ html, body {
 
 /* ===== 印刷時のみ A4 ===== */
 @media print {
+
   @page {
     size: A4 landscape;
     margin: 15mm;
   }
 
-  body {
-    margin: 0;
+  /* 上部UIを詰める */
+  .header {
+    margin-bottom: 5mm;
+  }
+
+  div[style*="margin-bottom:5mm"] {
+    margin-bottom: 2mm !important;
+  }
+
+  /* 行高を下げる（核心） */
+  .item {
+    height: 32px;
+    font-size: 12px;
+  }
+
+  canvas {
+    height: 28px;
+  }
+
+  /* 印刷に不要な操作UIは消す */
+  button {
+    display: none;
   }
 }
 
