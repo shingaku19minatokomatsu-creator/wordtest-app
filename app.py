@@ -330,42 +330,26 @@ html, body {
     margin: 15mm;
   }
 
-  /* ===== 上部UIを限界まで削る ===== */
-  .header {
-    margin-bottom: 3mm;
+  /* ===== 68%をCSS側で固定 ===== */
+  #print-root {
+    transform: scale(0.68);
+    transform-origin: top left;
+
+    /* 縮小分の横幅補正（重要） */
+    width: calc(100% / 0.68);
   }
 
-  h2 {
-    font-size: 16px;
-    margin: 0 0 1.5mm 0;
+  body {
+    margin: 0;
+    overflow: hidden;
   }
 
-  .header div {
-    font-size: 11px;
-    line-height: 1.1;
-  }
-
-  /* ボタン・操作行は完全に消す */
-  div[style*="margin-bottom:5mm"],
+  /* 操作UIは消す */
   button {
     display: none !important;
   }
-
-  /* ===== 核心：20行を100%で成立させる ===== */
-  .item {
-    height: 26px;      /* ← 最終限界値 */
-    font-size: 10.5px;
-  }
-
-  canvas {
-    height: 22px;      /* 書き心地ギリ維持 */
-  }
-
-  /* ページ分割誤判定の保険 */
-  body {
-    overflow: hidden;
-  }
 }
+
 
 
 
