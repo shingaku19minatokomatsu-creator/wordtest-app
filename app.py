@@ -733,6 +733,26 @@ def home():
 
     return render_template("home.html", username=user[0])
 
+@app.route("/reset/<int:user_id>")
+def reset_password(user_id):
+    if session.get("role") != "admin":
+        return redirect("/")
+
+    temp_password = "1234"  # 仮PW（後で変更可）
+
+    with get_db() as db:
+        db.execute("""
+            UPDATE users
+            SET password_hash=?
+            WHERE id=?
+        """, (
+            generate_password_hash(temp_password),
+            user_id
+        ))
+
+    return redirect("/admin")
+
+
 
 
 
@@ -1060,6 +1080,7 @@ def generate_html_test():
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 3710))
     app.run(host="0.0.0.0", port=port)
+
 
 
 
