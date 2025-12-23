@@ -1,1 +1,98 @@
 
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>管理者画面</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
+      margin: 0;
+      padding: 20px;
+    }
+
+    h2 {
+      margin-bottom: 16px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+    }
+
+    th, td {
+      padding: 10px;
+      border-bottom: 1px solid #ddd;
+      text-align: left;
+      font-size: 14px;
+    }
+
+    th {
+      background: #f0f0f0;
+    }
+
+    .btn {
+      padding: 6px 10px;
+      font-size: 13px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      text-decoration: none;
+      color: white;
+    }
+
+    .approve {
+      background: #28a745;
+    }
+
+    .delete {
+      background: #dc3545;
+    }
+
+    .logout {
+      display: inline-block;
+      margin-top: 16px;
+      background: #6c757d;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>管理者画面（生徒アカウント管理）</h2>
+
+  <table>
+    <tr>
+      <th>ID</th>
+      <th>名前</th>
+      <th>状態</th>
+      <th>操作</th>
+    </tr>
+
+    {% for u in users %}
+    <tr>
+      <td>{{ u[0] }}</td>
+      <td>{{ u[1] }}</td>
+      <td>
+        {% if u[2] %}
+          利用可
+        {% else %}
+          承認待ち
+        {% endif %}
+      </td>
+      <td>
+        {% if not u[2] %}
+          <a class="btn approve" href="/approve/{{ u[0] }}">承認</a>
+        {% endif %}
+        <a class="btn delete" href="/delete/{{ u[0] }}">削除</a>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+
+  <a class="btn logout" href="/logout">ログアウト</a>
+
+</body>
+</html>
