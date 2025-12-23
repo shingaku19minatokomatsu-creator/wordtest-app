@@ -1,1 +1,105 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>新規登録</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    .register-box {
+      background: white;
+      padding: 24px;
+      width: 320px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 14px;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 12px;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+
+    button {
+      width: 100%;
+      padding: 10px;
+      font-size: 15px;
+      border: none;
+      border-radius: 4px;
+      background: #28a745;
+      color: white;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #1e7e34;
+    }
+
+    .back {
+      text-align: center;
+      margin-top: 12px;
+      font-size: 14px;
+    }
+
+    .back a {
+      color: #007bff;
+      text-decoration: none;
+    }
+
+    .note {
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="register-box">
+    <h2>新規登録</h2>
+
+    <div class="note">
+      登録後、管理者の承認が必要です
+    </div>
+
+    <form method="post">
+      <label>名前（ID）</label>
+      <input type="text" name="username" required>
+
+      <label>パスワード</label>
+      <input type="password" name="password" required>
+
+      <button type="submit">登録</button>
+    </form>
+
+    <div class="back">
+      <a href="/">ログイン画面に戻る</a>
+    </div>
+  </div>
+
+</body>
+</html>
 
