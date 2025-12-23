@@ -57,6 +57,11 @@
       margin-top: 16px;
       background: #6c757d;
     }
+
+    .reset {
+      background: #ffc107;
+      color: black;
+    }
   </style>
 </head>
 <body>
@@ -87,7 +92,9 @@
           <a class="btn approve" href="/approve/{{ u[0] }}">承認</a>
         {% endif %}
         <a class="btn delete" href="/delete/{{ u[0] }}">削除</a>
+        <a class="btn reset" href="/reset/{{ u[0] }}">PWリセット</a>
       </td>
+
     </tr>
     {% endfor %}
   </table>
