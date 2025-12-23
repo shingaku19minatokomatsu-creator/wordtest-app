@@ -634,6 +634,26 @@ def require_login():
 
     if not session.get("login"):
         return redirect("/login")
+
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    if request.method == "POST":
+        username = request.form["username"]
+        password = request.form["password"]
+
+        with get_db() as db:
+            db.execute("""
+                INSERT INTO users (username, password_hash)
+                VALUES (?, ?)
+            """, (
+                username,
+                generate_password_hash(password)
+            ))
+
+        return "登録しました。管理者の承認をお待ちください。"
+
+    return render_template("register.html")
+
     
 
 
@@ -962,4 +982,5 @@ def generate_html_test():
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 3710))
     app.run(host="0.0.0.0", port=port)
+
 
