@@ -78,34 +78,19 @@ html, body {
 }
 
 @media print {
-
-  /* 見出しを少し詰める */
-  h2 {
-    font-size: 20px;
-    margin-bottom: 4mm;
+  @page {
+    size: A4 landscape;
+    margin: 15mm;
   }
 
-  /* フォーム行の縦マージンをmm固定 */
-  .row {
-    margin: 4mm 0;
+  /* ★ ここが重要：A4指定を消す */
+  body {
+    width: auto;
+    height: auto;
+    padding: 0;
   }
-
-  label {
-    font-size: 14px;
-    margin-bottom: 2mm;
-  }
-
-  input, select, button {
-    font-size: 14px;
-    padding: 6px;
-  }
-
-  /* 印刷に不要なものは消す */
-  button {
-    display: none;
-  }
-
 }
+
 
 /* スマホ用 */
 @media (max-width: 600px) {
