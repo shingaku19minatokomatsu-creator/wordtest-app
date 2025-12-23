@@ -492,11 +492,29 @@ function toggleAll(){
 
 
 document.querySelectorAll("canvas").forEach(c=>{
+  const ratio = window.devicePixelRatio || 1;
+
+  // ===== ① CSSサイズを保存（テンプレそのまま）=====
+  const cssW = c.width;
+  const cssH = c.height;
+
+  // ===== ② 内部解像度だけ拡大 =====
+  c.width  = cssW * ratio;
+  c.height = cssH * ratio;
+
+  // ===== ③ 見た目サイズは固定 =====
+  c.style.width  = cssW + "px";
+  c.style.height = cssH + "px";
+
   const ctx = c.getContext("2d");
+
+  // ★ ここが最重要（座標系を元に戻す）
+  ctx.scale(ratio, ratio);
+
   let drawing = false;
 
-  ctx.lineWidth = 0.6;       // 細字固定
-  ctx.lineCap = "round";      // ペン感
+  ctx.lineWidth = 0.6;        // ← 今まで通りでOK
+  ctx.lineCap = "round";
   ctx.lineJoin = "round";
   ctx.strokeStyle = color;
 
@@ -531,14 +549,13 @@ document.querySelectorAll("canvas").forEach(c=>{
     const p = getPos(e);
 
     if(mode === "eraser"){
-        ctx.clearRect(p.x - 6, p.y - 6, 12, 12);   // ★ 消しゴム
+      ctx.clearRect(p.x - 6, p.y - 6, 12, 12);
     }else{
-        ctx.strokeStyle = color;
-        ctx.lineTo(p.x, p.y);
-        ctx.stroke();                             // ★ ペン
+      ctx.strokeStyle = color;
+      ctx.lineTo(p.x, p.y);
+      ctx.stroke();
     }
   });
-
 
   c.addEventListener("pointerup", e=>{
     drawing = false;
@@ -549,6 +566,7 @@ document.querySelectorAll("canvas").forEach(c=>{
     drawing = false;
   });
 });
+
 
 document.querySelectorAll('.answer, .item > div:nth-child(2), .item > div:nth-child(6)')
   .forEach(el=>{
