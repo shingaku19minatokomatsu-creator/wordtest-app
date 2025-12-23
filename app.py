@@ -18,6 +18,9 @@ from flask import request, abort
 from reportlab.pdfbase.ttfonts import TTFont
 from tempfile import gettempdir
 from flask import session, redirect
+from flask import Flask, render_template, request, redirect, session
+from werkzeug.security import generate_password_hash, check_password_hash
+
 
 
 app = Flask(__name__)
@@ -982,5 +985,6 @@ def generate_html_test():
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 3710))
     app.run(host="0.0.0.0", port=port)
+
 
 
