@@ -84,11 +84,54 @@ html, body {
   }
 
   body {
-    margin: 0;
+    width: 297mm;
+    height: 210mm;
+    padding: 0;
   }
 }
 
 
+h2 {
+    font-size: 26px;
+    margin-bottom: 10px;
+}
+
+label {
+    display: block;
+    font-size: 18px;
+    margin-bottom: 4px;
+}
+
+input, select, button {
+    padding: 12px;
+    font-size: 18px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.row {
+    margin: 15px 0;
+}
+
+button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 20px;
+    padding: 14px;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #0056c7;
+}
+
+.note {
+    color: #666;
+    font-size: 15px;
+    margin-bottom: 10px;
+}
 
 /* スマホ用 */
 @media (max-width: 600px) {
@@ -108,7 +151,7 @@ html, body {
 </head>
 
 <body>
-<div id="print-root">
+
 <h2>単語テスト</h2>
 <div class="note">※「印刷用」を押すと test.pdf（問題→解答）が開きます。</div>
 
@@ -144,34 +187,6 @@ html, body {
 </form>
 
 <script>
-
-(function () {
-  function fitToA4Landscape() {
-    const root = document.getElementById("print-root");
-    if (!root) return;
-
-    // A4横（px換算：Chrome基準）
-    const A4_W = 1122; // 297mm
-    const A4_H = 793;  // 210mm
-
-    // 実寸
-    const rect = root.getBoundingClientRect();
-
-    // 縦横比を保って縮小
-    const scale = Math.min(
-      A4_W / rect.width,
-      A4_H / rect.height,
-      1
-    );
-
-    root.style.transformOrigin = "top left";
-    root.style.transform = `scale(${scale})`;
-  }
-
-  // 印刷直前
-  window.addEventListener("beforeprint", fitToA4Landscape);
-})();
-
 async function doGenerate(e){
   e.preventDefault();
 
@@ -309,14 +324,15 @@ html, body {
 
 /* ===== 印刷時のみ A4 ===== */
 @media print {
-  @page { size: A4 landscape; margin: 15mm; }
+  @page {
+    size: A4 landscape;
+    margin: 15mm;
+  }
 
   body {
-    width: 297mm;
-    height: 210mm;
+    margin: 0;
   }
 }
-
 
 
 /* ===== ヘッダ ===== */
@@ -405,6 +421,8 @@ canvas {
 </head>
 
 <body>
+<div id="print-root">
+
 
 <div class=\"header\">
   <div>
@@ -477,29 +495,11 @@ function toggleAll(){
 
 
 document.querySelectorAll("canvas").forEach(c=>{
-  const ratio = window.devicePixelRatio || 1;
-
-  // ===== ① CSSサイズを保存（テンプレそのまま）=====
-  const cssW = c.width;
-  const cssH = c.height;
-
-  // ===== ② 内部解像度だけ拡大 =====
-  c.width  = cssW * ratio;
-  c.height = cssH * ratio;
-
-  // ===== ③ 見た目サイズは固定 =====
-  c.style.width  = cssW + "px";
-  c.style.height = cssH + "px";
-
   const ctx = c.getContext("2d");
-
-  // ★ ここが最重要（座標系を元に戻す）
-  ctx.scale(ratio, ratio);
-
   let drawing = false;
 
-  ctx.lineWidth = 0.6;        // ← 今まで通りでOK
-  ctx.lineCap = "round";
+  ctx.lineWidth = 0.6;       // 細字固定
+  ctx.lineCap = "round";      // ペン感
   ctx.lineJoin = "round";
   ctx.strokeStyle = color;
 
@@ -534,13 +534,14 @@ document.querySelectorAll("canvas").forEach(c=>{
     const p = getPos(e);
 
     if(mode === "eraser"){
-      ctx.clearRect(p.x - 6, p.y - 6, 12, 12);
+        ctx.clearRect(p.x - 6, p.y - 6, 12, 12);   // ★ 消しゴム
     }else{
-      ctx.strokeStyle = color;
-      ctx.lineTo(p.x, p.y);
-      ctx.stroke();
+        ctx.strokeStyle = color;
+        ctx.lineTo(p.x, p.y);
+        ctx.stroke();                             // ★ ペン
     }
   });
+
 
   c.addEventListener("pointerup", e=>{
     drawing = false;
@@ -551,7 +552,6 @@ document.querySelectorAll("canvas").forEach(c=>{
     drawing = false;
   });
 });
-
 
 document.querySelectorAll('.answer, .item > div:nth-child(2), .item > div:nth-child(6)')
   .forEach(el=>{
