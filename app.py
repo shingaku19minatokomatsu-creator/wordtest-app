@@ -612,20 +612,35 @@ document.querySelectorAll('.answer, .item > div:nth-child(2), .item > div:nth-ch
 
 
 
-@app.route("/login", methods=["GET", "POST"])
+@app.route("/", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
-        user = request.form["username"]
-        pw   = request.form["password"]
+        username = request.form["username"]
+        password = request.form["password"]
 
-        # ★ 好きなIDとパスワードに変更
-        if user == "minato" and pw == "3710":
-            session["login"] = True
-            return redirect("/")
-        else:
+        with get_db() as db:
+            cur = db.execute(
+                "SELECT id, username, password_hash, role, is_active FROM users WHERE username=?",
+                (username,)
+            )
+            user = cur.fetchone()
+
+        if not user:
             return "ログイン失敗", 401
 
-    return render_template_string(LOGIN_HTML)
+        if not check_password_hash(user[2], password):
+            return "ログイン失敗", 401
+
+        if not user[4]:
+            return "承認待ちです"
+
+        session["user_id"] = user[0]
+        session["role"] = user[3]
+
+        return redirect("/admin" if user[3] == "admin" else "/home")
+
+    return render_template("login.html")
+
 
 
 @app.before_request
@@ -704,6 +719,19 @@ def logout():
     session.clear()
     return redirect("/")
 
+@app.route("/home")
+def home():
+    if "user_id" not in session or session.get("role") != "student":
+        return redirect("/")
+
+    with get_db() as db:
+        cur = db.execute(
+            "SELECT username FROM users WHERE id=?",
+            (session["user_id"],)
+        )
+        user = cur.fetchone()
+
+    return render_template("home.html", username=user[0])
 
 
 
@@ -1032,6 +1060,7 @@ def generate_html_test():
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 3710))
     app.run(host="0.0.0.0", port=port)
+
 
 
 
