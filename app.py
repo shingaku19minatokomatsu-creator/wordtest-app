@@ -7,12 +7,23 @@ from pathlib import Path
 from reportlab.pdfgen import canvas
 from flask import send_file
 import io
+from reportlab.lib.pagesizes import A4, landscape
+from reportlab.lib.units import mm
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.pdfbase.pdfmetrics import stringWidth
+import uuid
+from tempfile import gettempdir
+
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "dev-secret")
 
 DB_PATH = os.environ.get("DB_PATH", "users.db")
 EXCEL_PATH = Path("英単語テスト.xlsx")  # ← あなたの単語Excelに合わせてOK
+
+TMPDIR = Path(gettempdir()) / "word_test"
+TMPDIR.mkdir(exist_ok=True)
 
 # -------------------------
 # DB
@@ -40,7 +51,7 @@ def ensure_admin():
             db.execute("""
                 INSERT INTO users (username, password_hash, role, is_active)
                 VALUES (?, ?, 'admin', 1)
-            """, ("minato", generate_password_hash("3710")))
+            """, ("shingaku19minato", generate_password_hash("minato0828")))
 
 # -------------------------
 # HTML（templates無し）
@@ -648,9 +659,9 @@ ADMIN_HTML = """
 
 @app.before_request
 def require_login():
-    open_paths = ["/login", "/register", "/static", "/favicon.ico"]
-    if any(request.path.startswith(p) for p in open_paths):
+    if request.path.startswith(("/login", "/register", "/static", "/favicon.ico")):
         return
+
     if not session.get("user_id"):
         return redirect("/login")
 
@@ -771,19 +782,124 @@ def generate_html_test():
   
 @app.route("/generate", methods=["POST"])
 def generate():
-    buffer = io.BytesIO()
-    c = canvas.Canvas(buffer)
-    c.drawString(100, 750, "PDF TEST")
-    c.showPage()
-    c.save()
-    buffer.seek(0)
+    data = request.get_json()
+    sheet = data["sheet"]
+    start = int(data["start"])
+    end   = int(data["end"])
+
+    rows = load_sheet_rows(EXCEL_PATH, sheet)
+    items = pick40(rows, start, end)
+
+    pdf_path = make_two_page_pdf(items, sheet, start, end)
 
     return send_file(
-        buffer,
+        str(pdf_path),
         mimetype="application/pdf",
-        as_attachment=False,
-        download_name="test.pdf"
+        as_attachment=False
     )
+
+
+def make_two_page_pdf(items, sheet, start, end):
+    filename = TMPDIR / f"{uuid.uuid4().hex}_final.pdf"
+    c = canvas.Canvas(str(filename), pagesize=landscape(A4))
+    PW, PH = landscape(A4)
+
+    margin = 15*mm
+    col_gap = 15*mm
+    usable_w = PW - margin*2
+    col_w = (usable_w - col_gap)/2
+
+    left_x = margin
+    right_x = left_x + col_w + col_gap
+    # ====== ページ描画 ======
+    def draw_page(mode_label):
+        title_y  = PH - 10*mm
+        words_y  = title_y - 10*mm
+        start_y  = words_y - 14*mm
+
+        c.setFont(DEFAULT_FONT, 16)
+        c.drawString(left_x, title_y, "shingaku19minato test")
+        
+        c.setFont(DEFAULT_FONT, 12)
+        c.drawString(left_x, words_y, f"words  {sheet}（{start}～{end}）")
+        
+        # ←★ これを忘れずに入れる
+        c.setFont(DEFAULT_FONT, 12)
+        c.drawString(PW - margin - 170, title_y, "name：________________")
+        c.drawString(PW - margin - 170, title_y - 8*mm, "score：________________")
+
+        rows_per_col = 20
+        bottom = 12*mm
+        avail_h = start_y - bottom
+        line_h = avail_h / rows_per_col
+        if line_h > 12*mm: line_h = 12*mm
+        if line_h < 9*mm:  line_h = 9*mm
+
+
+        # ===== 20行の表を2列に描く =====
+        def draw_col(base_x, idx0):
+            for i in range(rows_per_col):
+                if idx0+i >= len(items): break
+                r = items[idx0+i]
+        
+                y = start_y - i * line_h
+        
+                # 番号
+                c.setFont(DEFAULT_FONT, 10)
+                c.drawString(base_x, y, f"{r['no']}.")
+        
+                # ▼ 幅設定（安全マージン）
+                question_width = col_w * 0.50    # 問題の横幅
+                answer_width   = col_w * 0.40    # 解答の横幅
+                margin_between = col_w * 0.10    # 問題〜解答の間隔
+        
+                qx = base_x + 10*mm
+        
+                # ▼ 高さを3行分確保
+                max_h = line_h * 3.2
+        
+                # ▼ 問題
+                draw_text_fitted(
+                    c, r['q'], DEFAULT_FONT,
+                    qx, y,
+                    question_width,
+                    max_h
+                )
+        
+                if mode_label == "q":
+                    lx1 = qx + question_width + 2*mm
+                    lx2 = base_x + col_w - 5*mm
+                    c.setLineWidth(0.5)
+                    c.line(lx1, y - 3, lx2, y - 3)
+                else:
+                    # ▼ 解答（右に寄せる）
+                    ax = base_x + question_width + margin_between
+                    # 修正: draw_text_fitted から draw_answer_fitted に変更
+                    draw_answer_fitted( 
+                        c, r['a'], DEFAULT_FONT,
+                        ax, y,
+                        answer_width,
+                        max_h
+                    )
+
+
+
+        
+
+        draw_col(left_x, 0)
+        draw_col(right_x, 20)
+
+        c.showPage()
+
+
+    # ===== 1ページ目：問題 =====
+    draw_page("q")
+
+    # ===== 2ページ目：解答 =====
+    draw_page("a")
+
+    c.save()
+    return filename
 
 
 
