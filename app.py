@@ -4,6 +4,9 @@ from flask import Flask, request, redirect, session, render_template_string
 from werkzeug.security import generate_password_hash, check_password_hash
 from openpyxl import load_workbook
 from pathlib import Path
+from reportlab.pdfgen import canvas
+from flask import send_file
+import io
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "dev-secret")
@@ -248,10 +251,11 @@ async function doPdf(){
   if(!p) return;
 
   const win = window.open("about:blank");
+
   const res = await fetch("/generate", {
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify(p)
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify(p)
   });
 
   if(!res.ok){
@@ -259,8 +263,11 @@ async function doPdf(){
     alert(await res.text());
     return;
   }
-  const data = await res.json();
-  win.location.href = data.pdf_url;
+
+  // ★ ここが重要（URLを使わないPDF表示）
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  win.location.href = url;
 }
 
 async function doHtml(){
@@ -690,8 +697,10 @@ def register():
 
 @app.route("/")
 def index():
-    wb = load_workbook(str(EXCEL_PATH), read_only=True)
-    return render_template_string(INDEX_HTML, sheets=wb.sheetnames)
+    wb = load_workbook(EXCEL_PATH, data_only=True)
+    sheets = wb.sheetnames
+    return render_template_string(INDEX_HTML, sheets=sheets)
+
 
 @app.route("/admin")
 def admin():
@@ -737,15 +746,16 @@ def generate_html_test():
     start = int(data["start"])
     end   = int(data["end"])
 
+    wb = load_workbook(EXCEL_PATH, data_only=True)
+    ws = wb[sheet]
+
     items = []
     for i in range(start, end + 1):
-        items.append({
-            "no": i,
-            "q": f"Question {i}",
-            "a": f"Answer {i}"
-        })
+        q = ws.cell(row=i, column=1).value or ""
+        a = ws.cell(row=i, column=2).value or ""
+        items.append({"no": i, "q": q, "a": a})
 
-    # ★ 40問未満でも落ちないようにする（重要）
+    # ★ 40問保証（HTML_TEST_TEMPLATE対策）
     while len(items) < 40:
         items.append({"no":"", "q":"", "a":""})
 
@@ -757,15 +767,24 @@ def generate_html_test():
         items=items
     )
 
+
   
 @app.route("/generate", methods=["POST"])
 def generate():
-    data = request.json
+    buffer = io.BytesIO()
+    c = canvas.Canvas(buffer)
+    c.drawString(100, 750, "PDF TEST")
+    c.showPage()
+    c.save()
+    buffer.seek(0)
 
-    # 仮：とりあえず動作確認用
-    return {
-        "pdf_url": "/test.pdf"
-    }
+    return send_file(
+        buffer,
+        mimetype="application/pdf",
+        as_attachment=False,
+        download_name="test.pdf"
+    )
+
 
 
 # -------------------------
