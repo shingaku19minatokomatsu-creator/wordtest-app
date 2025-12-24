@@ -198,10 +198,11 @@ button:hover {
 
 <body>
 
-<h2>単語テスト</h2>
-<div class="note">※「印刷用」を押すと test.pdf（問題→解答）が開きます。</div>
+<div style="text-align:right;margin-bottom:10px;">
+  <a href="/logout">ログアウト</a>
+</div>
 
-<form id="form" onsubmit="return doGenerate(event)">
+<form>
   <div class="row">
     <label>単語帳（シート）</label>
     <select id="sheet">
@@ -221,140 +222,76 @@ button:hover {
     <input id="end" required>
   </div>
 
-  <!-- ★ 出力方式 -->
   <div class="row">
-    <label>出力形式</label>
-    <label><input type="radio" name="mode" value="pdf" checked> PDF（印刷用）</label>
-    <label><input type="radio" name="mode" value="html"> HTML（テスト）</label>
+    <button type="button" onclick="doPdf()">PDF出力</button>
   </div>
 
   <div class="row">
-    <button type="submit">出力</button>
+    <button type="button" onclick="doHtml()">HTMLテスト</button>
   </div>
 </form>
 
-
 <script>
-async function doGenerate(e){
-  e.preventDefault();
-
+function getParams(){
   const sheet = document.getElementById('sheet').value;
   const start = document.getElementById('start').value;
   const end   = document.getElementById('end').value;
-  const mode  = document.querySelector('input[name="mode"]:checked').value;
-
   if(!sheet || !start || !end){
-    alert("シート・開始・終了番号が必要です。");
-    return false;
+    alert("シート・開始・終了番号が必要です");
+    return null;
   }
-
-  const win = window.open("about:blank", "_blank");
-
-  const url = (mode === "pdf")
-    ? "/generate"
-    : "/generate_html_test";
-
-  try {
-    const res = await fetch(url, {
-      method: "POST",
-      headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({sheet, start, end})
-    });
-
-    if(!res.ok){
-      const tx = await res.text();
-      win.close();
-      alert("エラー: " + tx);
-      return false;
-    }
-
-    if(mode === "pdf"){
-      const data = await res.json();
-      win.location.href = data.pdf_url;
-    }else{
-      const html = await res.text();
-      win.document.open();
-      win.document.write(html);
-      win.document.close();
-    }
-
-  } catch(err){
-    win.close();
-    alert("通信エラー: " + err);
-  }
-
-  return false;
+  return {sheet, start, end};
 }
 
+async function doPdf(){
+  const p = getParams();
+  if(!p) return;
 
+  const win = window.open("about:blank");
+  const res = await fetch("/generate", {
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify(p)
+  });
 
-
-async function doHtmlTest(){
-  const sheet = document.getElementById('sheet').value;
-  const start = document.getElementById('start').value;
-  const end   = document.getElementById('end').value;
-
-  if(!sheet || !start || !end){
-    alert("シート・開始・終了番号が必要です。");
+  if(!res.ok){
+    win.close();
+    alert(await res.text());
     return;
   }
+  const data = await res.json();
+  win.location.href = data.pdf_url;
+}
 
-  const win = window.open("about:blank", "_blank");
+async function doHtml(){
+  const p = getParams();
+  if(!p) return;
 
-  try {
-    const res = await fetch("/generate_html_test", {
-      method: "POST",
-      headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({sheet, start, end})
-    });
+  const win = window.open("about:blank");
+  const res = await fetch("/generate_html_test", {
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify(p)
+  });
 
-    if(!res.ok){
-      const tx = await res.text();
-      win.close();
-      alert("エラー: " + tx);
-      return;
-    }
-
-    const html = await res.text();
-    win.document.open();
-    win.document.write(html);
-    win.document.close();
-
-  } catch(err){
+  if(!res.ok){
     win.close();
-    alert("通信エラー: " + err);
+    alert(await res.text());
+    return;
   }
+  const html = await res.text();
+  win.document.open();
+  win.document.write(html);
+  win.document.close();
 }
 </script>
 
 
+
 </body>
 </html>
 """
 
-LOGIN_HTML = """
-<!doctype html>
-<html>
-<head>
-<meta charset="utf-8">
-<title>ログイン</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<style>
-body { font-family: sans-serif; max-width: 420px; margin: 60px auto; padding: 20px; }
-input, button { width: 100%; padding: 14px; font-size: 18px; margin: 10px 0; }
-button { background:#007bff; color:#fff; border:none; border-radius:6px; }
-</style>
-</head>
-<body>
-<h2>ログイン</h2>
-<form method="post">
-  <input name="username" placeholder="ID" required>
-  <input name="password" type="password" placeholder="パスワード" required>
-  <button>ログイン</button>
-</form>
-</body>
-</html>
-"""
 
 # ①〜④ HTML版テスト機能 追加コード（PDF完全一致レイアウト版）
 # 既存 app.py に追記する想定
@@ -704,11 +641,13 @@ ADMIN_HTML = """
 
 @app.before_request
 def require_login():
-    open_paths = ["/login", "/register", "/static"]
+    open_paths = ["/login", "/register", "/static", "/favicon.ico"]
     if any(request.path.startswith(p) for p in open_paths):
         return
     if not session.get("user_id"):
         return redirect("/login")
+
+
 
 # -------------------------
 # Routes
@@ -789,6 +728,45 @@ def delete(uid):
 def logout():
     session.clear()
     return redirect("/login")
+
+  
+@app.route("/generate_html_test", methods=["POST"])
+def generate_html_test():
+    data = request.json
+    sheet = data["sheet"]
+    start = int(data["start"])
+    end   = int(data["end"])
+
+    items = []
+    for i in range(start, end + 1):
+        items.append({
+            "no": i,
+            "q": f"Question {i}",
+            "a": f"Answer {i}"
+        })
+
+    # ★ 40問未満でも落ちないようにする（重要）
+    while len(items) < 40:
+        items.append({"no":"", "q":"", "a":""})
+
+    return render_template_string(
+        HTML_TEST_TEMPLATE,
+        sheet=sheet,
+        start=start,
+        end=end,
+        items=items
+    )
+
+  
+@app.route("/generate", methods=["POST"])
+def generate():
+    data = request.json
+
+    # 仮：とりあえず動作確認用
+    return {
+        "pdf_url": "/test.pdf"
+    }
+
 
 # -------------------------
 # 起動時
