@@ -14,6 +14,18 @@ from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfbase.pdfmetrics import stringWidth
 import uuid
 from tempfile import gettempdir
+import random
+
+# ===== 日本語フォント =====
+FONT_PATH = Path("fonts/ipaexm.ttf")
+DEFAULT_FONT = "IPAEX_M"
+
+try:
+    pdfmetrics.registerFont(TTFont(DEFAULT_FONT, str(FONT_PATH)))
+except Exception as e:
+    print("⚠ フォント読込失敗 → Helvetica", e)
+    DEFAULT_FONT = "Helvetica"
+
 
 
 app = Flask(__name__)
@@ -752,30 +764,20 @@ def logout():
   
 @app.route("/generate_html_test", methods=["POST"])
 def generate_html_test():
-    data = request.json
+    data = request.get_json()
     sheet = data["sheet"]
     start = int(data["start"])
     end   = int(data["end"])
 
-    wb = load_workbook(EXCEL_PATH, data_only=True)
-    ws = wb[sheet]
-
-    items = []
-    for i in range(start, end + 1):
-        q = ws.cell(row=i, column=1).value or ""
-        a = ws.cell(row=i, column=2).value or ""
-        items.append({"no": i, "q": q, "a": a})
-
-    # ★ 40問保証（HTML_TEST_TEMPLATE対策）
-    while len(items) < 40:
-        items.append({"no":"", "q":"", "a":""})
+    rows = load_sheet_rows(EXCEL_PATH, sheet)
+    items = pick40(rows, start, end)
 
     return render_template_string(
         HTML_TEST_TEMPLATE,
+        items=items,
         sheet=sheet,
         start=start,
-        end=end,
-        items=items
+        end=end
     )
 
 
@@ -797,6 +799,80 @@ def generate():
         mimetype="application/pdf",
         as_attachment=False
     )
+
+def load_sheet_rows(path, sheet):
+    wb = load_workbook(str(path), data_only=True)
+    ws = wb[sheet]
+    rows = []
+    for row in ws.iter_rows(min_row=2, max_col=3, values_only=True):
+        a, b, c = row
+        if a is None and (not b) and (not c):
+            continue
+        try:
+            num = int(float(a))
+        except:
+            num = None
+        rows.append({
+            "num": num,
+            "q": "" if b is None else str(b),
+            "a": "" if c is None else str(c)
+        })
+    return rows
+  
+
+
+def pick40(rows, start, end):
+    r = [x for x in rows if x["num"] is not None and start <= x["num"] <= end]
+    random.shuffle(r)
+    r = r[:40]
+    while len(r) < 40:
+        r.append({"num": None, "q": "", "a": ""})
+    for i, rr in enumerate(r):
+        rr["no"] = i + 1
+    return r
+
+def wrap_text(text, font, size, max_width):
+    if " " in text:
+        units = text.split(" ")
+    else:
+        units = list(text)
+
+    lines = []
+    current = ""
+
+    for u in units:
+        test = (current + " " + u).strip() if " " in text else (current + u)
+        if stringWidth(test, font, size) <= max_width:
+            current = test
+        else:
+            lines.append(current)
+            current = u
+
+    if current:
+        lines.append(current)
+
+    return lines
+
+def draw_text_fitted(c, text, font, base_x, base_y, max_width, max_height):
+    if not text:
+        return
+
+    for size in range(10, 3, -1):
+        lines = wrap_text(text, font, size, max_width)
+        if len(lines) > 2:
+            continue
+
+        total_h = len(lines) * size
+        if total_h <= max_height:
+            c.setFont(font, size)
+            y = base_y
+            for ln in lines:
+                c.drawString(base_x, y, ln)
+                y -= size + 2
+            return
+
+def draw_answer_fitted(c, text, font, base_x, base_y, max_width, max_height):
+    draw_text_fitted(c, text, font, base_x, base_y, max_width, max_height)
 
 
 def make_two_page_pdf(items, sheet, start, end):
