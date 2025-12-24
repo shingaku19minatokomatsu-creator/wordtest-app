@@ -19,13 +19,16 @@ from reportlab.pdfbase.ttfonts import TTFont
 from tempfile import gettempdir
 from flask import session, redirect
 from flask import Flask, render_template, request, redirect, session
+import sqlite3
+import os
 from werkzeug.security import generate_password_hash, check_password_hash
-
 
 
 app = Flask(__name__)
 
-app.secret_key = "change-this-to-random-string"
+app.secret_key = "replace-this-secret"
+
+DB_PATH = os.environ.get("DB_PATH", "users.db")
       
 # ====== 設定 ======
 EXCEL_PATH = Path("英単語テスト.xlsx")
@@ -612,7 +615,7 @@ document.querySelectorAll('.answer, .item > div:nth-child(2), .item > div:nth-ch
 
 
 
-@app.route("/", methods=["GET", "POST"])
+@app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
         username = request.form["username"]
@@ -620,16 +623,13 @@ def login():
 
         with get_db() as db:
             cur = db.execute(
-                "SELECT id, username, password_hash, role, is_active FROM users WHERE username=?",
+                "SELECT * FROM users WHERE username=?",
                 (username,)
             )
             user = cur.fetchone()
 
-        if not user:
-            return "ログイン失敗", 401
-
-        if not check_password_hash(user[2], password):
-            return "ログイン失敗", 401
+        if not user or not check_password_hash(user[2], password):
+            return "ログイン失敗"
 
         if not user[4]:
             return "承認待ちです"
@@ -637,21 +637,10 @@ def login():
         session["user_id"] = user[0]
         session["role"] = user[3]
 
-        return redirect("/admin" if user[3] == "admin" else "/home")
+        return redirect("/")
 
     return render_template("login.html")
 
-
-
-@app.before_request
-def require_login():
-    path = request.path
-
-    if path.startswith("/login") or path.startswith("/static"):
-        return
-
-    if not session.get("login"):
-        return redirect("/login")
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
@@ -663,34 +652,30 @@ def register():
             db.execute("""
                 INSERT INTO users (username, password_hash)
                 VALUES (?, ?)
-            """, (
-                username,
-                generate_password_hash(password)
-            ))
+            """, (username, generate_password_hash(password)))
 
-        return "登録しました。管理者の承認をお待ちください。"
+        return "登録しました。承認をお待ちください。"
 
     return render_template("register.html")
 
+def admin_required():
+    return session.get("role") == "admin"
 
 @app.route("/admin")
 def admin():
-    if session.get("role") != "admin":
+    if not admin_required():
         return redirect("/")
 
     with get_db() as db:
-        users = db.execute("""
-            SELECT id, username, is_active
-            FROM users
-            WHERE role='student'
-        """).fetchall()
+        users = db.execute(
+            "SELECT id, username, is_active FROM users WHERE role='student'"
+        ).fetchall()
 
     return render_template("admin.html", users=users)
 
-
 @app.route("/approve/<int:user_id>")
 def approve(user_id):
-    if session.get("role") != "admin":
+    if not admin_required():
         return redirect("/")
 
     with get_db() as db:
@@ -698,62 +683,53 @@ def approve(user_id):
             "UPDATE users SET is_active=1 WHERE id=?",
             (user_id,)
         )
-
     return redirect("/admin")
 
-@app.route("/delete/<int:user_id>")
-def delete(user_id):
-    if session.get("role") != "admin":
-        return redirect("/")
 
-    with get_db() as db:
-        db.execute(
-            "DELETE FROM users WHERE id=?",
-            (user_id,)
-        )
 
-    return redirect("/admin")
+@app.before_request
+def require_login():
+    open_paths = ["/login", "/register", "/static"]
 
-@app.route("/logout")
-def logout():
-    session.clear()
-    return redirect("/")
+    if any(request.path.startswith(p) for p in open_paths):
+        return
 
-@app.route("/home")
-def home():
-    if "user_id" not in session or session.get("role") != "student":
-        return redirect("/")
+    if not session.get("user_id"):
+        return redirect("/login")
 
-    with get_db() as db:
-        cur = db.execute(
-            "SELECT username FROM users WHERE id=?",
-            (session["user_id"],)
-        )
-        user = cur.fetchone()
+      
 
-    return render_template("home.html", username=user[0])
+    
 
-@app.route("/reset/<int:user_id>")
-def reset_password(user_id):
-    if session.get("role") != "admin":
-        return redirect("/")
 
-    temp_password = "1234"  # 仮PW（後で変更可）
+def get_db():
+    return sqlite3.connect(DB_PATH)
 
+def init_db():
     with get_db() as db:
         db.execute("""
-            UPDATE users
-            SET password_hash=?
-            WHERE id=?
-        """, (
-            generate_password_hash(temp_password),
-            user_id
-        ))
-
-    return redirect("/admin")
-
-
-
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT UNIQUE NOT NULL,
+            password_hash TEXT NOT NULL,
+            role TEXT NOT NULL DEFAULT 'student',
+            is_active INTEGER NOT NULL DEFAULT 0
+        )
+        """)
+        
+def ensure_admin():
+    with get_db() as db:
+        cur = db.execute(
+            "SELECT * FROM users WHERE role='admin'"
+        )
+        if cur.fetchone() is None:
+            db.execute("""
+                INSERT INTO users (username, password_hash, role, is_active)
+                VALUES (?, ?, 'admin', 1)
+            """, (
+                "shingaku19minato",
+                generate_password_hash("minato0828")
+            ))
 
 
 
@@ -1076,13 +1052,12 @@ def generate_html_test():
     end=end
     )
 
+with app.app_context():
+    init_db()
+    ensure_admin()
+
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 3710))
     app.run(host="0.0.0.0", port=port)
-
-
-
-
-
 
