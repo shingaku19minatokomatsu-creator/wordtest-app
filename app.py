@@ -531,9 +531,14 @@ function setMode(m){
 
 function clearAll(){
   document.querySelectorAll("canvas").forEach(c=>{
-    c.getContext("2d").clearRect(0,0,c.width,c.height);
+    const ctx = c.getContext("2d");
+    ctx.save();
+    ctx.setTransform(1,0,0,1,0,0);  // ← スケール解除
+    ctx.clearRect(0, 0, c.width, c.height);
+    ctx.restore();
   });
 }
+
 
 function toggleAll(){
   document.querySelectorAll('.answer')
