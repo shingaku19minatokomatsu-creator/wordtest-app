@@ -15,6 +15,27 @@ from reportlab.pdfbase.pdfmetrics import stringWidth
 import uuid
 from tempfile import gettempdir
 import random
+import psycopg2
+import os
+from contextlib import contextmanager
+import psycopg2, os
+
+
+
+conn = psycopg2.connect(os.environ["DATABASE_URL"])
+print("DB CONNECT OK")
+conn.close()
+
+DATABASE_URL = os.environ.get("DATABASE_URL")
+
+@contextmanager
+def get_db():
+    conn = psycopg2.connect(DATABASE_URL)
+    try:
+        yield conn
+        conn.commit()
+    finally:
+        conn.close()
 
 # ===== 日本語フォント =====
 FONT_PATH = Path("fonts/ipaexm.ttf")
@@ -58,12 +79,37 @@ def init_db():
 
 def ensure_admin():
     with get_db() as db:
-        cur = db.execute("SELECT * FROM users WHERE role='admin'")
+
+        # ===== 管理者 =====
+        cur = db.execute(
+            "SELECT * FROM users WHERE username=?",
+            ("shingaku19minato",)
+        )
         if cur.fetchone() is None:
             db.execute("""
-                INSERT INTO users (username, password_hash, role, is_active)
+                INSERT INTO users
+                (username, password_hash, role, is_active)
                 VALUES (?, ?, 'admin', 1)
-            """, ("shingaku19minato", generate_password_hash("minato0828")))
+            """, (
+                "shingaku19minato",
+                generate_password_hash("minato0828")
+            ))
+
+        # ===== 初期ユーザー =====
+        cur = db.execute(
+            "SELECT * FROM users WHERE username=?",
+            ("minato",)
+        )
+        if cur.fetchone() is None:
+            db.execute("""
+                INSERT INTO users
+                (username, password_hash, role, is_active)
+                VALUES (?, ?, 'student', 1)
+            """, (
+                "minato",
+                generate_password_hash("3710")
+            ))
+
 
 # -------------------------
 # HTML（templates無し）
@@ -105,11 +151,12 @@ REGISTER_HTML = """
 <head>
 <meta charset="utf-8">
 <title>新規登録</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 body{font-family:sans-serif;background:#f5f5f5;
 display:flex;justify-content:center;align-items:center;height:100vh}
-.box{background:#fff;padding:24px;width:320px;border-radius:8px}
-input,button{width:100%;padding:10px;margin-top:10px}
+.box{background:#fff;padding:24px;width:320px; max-width:90vw;border-radius:8px;}
+input,button{width:100%;padding:12px;font-size:16px;margin-top:10px}
 </style>
 </head>
 <body>
@@ -359,25 +406,26 @@ html, body {
     margin: 15mm;
   }
 
-  /* ===== 65%をCSS側で固定 ===== */
+  html, body {
+    width: 297mm;
+    height: 210mm;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+  }
+
   #print-root {
     transform: scale(0.65);
     transform-origin: top left;
 
-    /* 縮小分の横幅補正（重要） */
-    width: calc(100% / 0.65);
+    width: calc(297mm / 0.65);   /* ★ mmで固定 */
   }
 
-  body {
-    margin: 0;
-    overflow: hidden;
-  }
-
-  /* 操作UIは消す */
   button {
     display: none !important;
   }
 }
+
 
 
 
@@ -643,32 +691,134 @@ document.querySelectorAll('.answer, .item > div:nth-child(2), .item > div:nth-ch
 
 ADMIN_HTML = """
 <!doctype html>
-<html>
-<head><meta charset="utf-8"><title>管理者</title></head>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>管理者</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+body{
+  font-family: sans-serif;
+  padding: 16px;
+  background: #f5f5f5;
+}
+
+h2{
+  font-size: 24px;
+  margin-bottom: 12px;
+}
+
+.controls{
+  margin-bottom: 12px;
+}
+
+.controls button{
+  padding: 8px 12px;
+  font-size: 15px;
+  margin-right: 6px;
+}
+
+/* テーブル全体を包んで横スクロール対応 */
+.table-wrap{
+  overflow-x: auto;
+  background: #fff;
+  border-radius: 6px;
+}
+
+table{
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 560px;
+}
+
+th, td{
+  border: 1px solid #ccc;
+  padding: 10px;
+  font-size: 16px;
+  text-align: left;
+  white-space: nowrap;
+}
+
+th{
+  background: #eee;
+}
+
+.footer{
+  margin-top: 16px;
+}
+
+@media (max-width: 600px){
+  h2{ font-size: 22px; }
+  th, td{ font-size: 15px; padding: 8px; }
+}
+</style>
+</head>
+
 <body>
+
 <h2>管理者画面</h2>
-<table border="1">
-<tr><th>ID</th><th>名前</th><th>状態</th><th>操作</th></tr>
+
+<form method="post" action="/bulk_action">
+
+<div class="controls">
+  <button name="action" value="approve">選択承認</button>
+  <button name="action" value="delete"
+          onclick="return confirm('選択したユーザーを削除しますか？')">
+    選択削除
+  </button>
+  <button type="button" onclick="selectAll()">全選択</button>
+  <button type="button" onclick="selectPending()">未承認全選択</button>
+</div>
+
+<div class="table-wrap">
+<table>
+<tr>
+  <th></th>
+  <th>ID</th>
+  <th>名前</th>
+  <th>状態</th>
+</tr>
+
 {% for u in users %}
 <tr>
-<td>{{u[0]}}</td>
-<td>{{u[1]}}</td>
-<td>{{"OK" if u[2] else "承認待ち"}}</td>
-<td>
-{% if not u[2] %}
-<a href="/approve/{{u[0]}}">承認</a>
-{% endif %}
-<a href="/reset/{{u[0]}}">PWリセット</a>
-<a href="/delete/{{u[0]}}">削除</a>
-</td>
+  <td>
+    <input type="checkbox" name="uids" value="{{u[0]}}">
+  </td>
+  <td>{{u[0]}}</td>
+  <td>{{u[1]}}</td>
+  <td>{{"OK" if u[2] else "承認待ち"}}</td>
 </tr>
 {% endfor %}
 </table>
-<br>
-<a href="/logout">ログアウト</a>
+</div>
+
+</form>
+
+<div class="footer">
+  <a href="/logout">ログアウト</a>
+</div>
+
+<script>
+function selectAll(){
+  document.querySelectorAll("input[name='uids']")
+    .forEach(cb => cb.checked = true);
+}
+
+function selectPending(){
+  document.querySelectorAll("tr").forEach(tr=>{
+    if(tr.innerText.includes("承認待ち")){
+      const cb = tr.querySelector("input[name='uids']");
+      if(cb) cb.checked = true;
+    }
+  });
+}
+</script>
+
 </body>
 </html>
 """
+
+
 
 # -------------------------
 # ログイン制御
@@ -765,6 +915,33 @@ def delete(uid):
 def logout():
     session.clear()
     return redirect("/login")
+  
+@app.route("/bulk_action", methods=["POST"])
+def bulk_action():
+    if session.get("role") != "admin":
+        return redirect("/")
+
+    action = request.form.get("action")
+    uids = request.form.getlist("uids")
+
+    if not uids:
+        return redirect("/admin")
+
+    with get_db() as db:
+        if action == "approve":
+            db.executemany(
+                "UPDATE users SET is_active=1 WHERE id=?",
+                [(uid,) for uid in uids]
+            )
+
+        elif action == "delete":
+            db.executemany(
+                "DELETE FROM users WHERE id=?",
+                [(uid,) for uid in uids]
+            )
+
+    return redirect("/admin")
+
 
   
 @app.route("/generate_html_test", methods=["POST"])
