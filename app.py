@@ -828,7 +828,6 @@ function selectPending(){
 def require_login():
     if request.path.startswith(("/login", "/register", "/static", "/favicon.ico")):
         return
-
     if not session.get("user_id"):
         return redirect("/login")
 
@@ -844,9 +843,13 @@ def login():
         u = request.form["username"]
         p = request.form["password"]
 
-        with get_db() as db:
-            cur = db.execute("SELECT * FROM users WHERE username=?", (u,))
-            user = cur.fetchone()
+        conn, cur = get_db()
+        cur.execute(
+            "SELECT id, username, password_hash, role, approved FROM users WHERE username=%s",
+            (u,)
+        )
+        user = cur.fetchone()
+        conn.close()
 
         if not user or not check_password_hash(user[2], p):
             return "ログイン失敗"
@@ -857,21 +860,31 @@ def login():
         session["user_id"] = user[0]
         session["role"] = user[3]
 
-        return redirect("/admin" if user[3]=="admin" else "/")
+        return redirect("/admin" if user[3] == "admin" else "/")
 
     return render_template_string(LOGIN_HTML)
 
-@app.route("/register", methods=["GET","POST"])
+
+@app.route("/register", methods=["GET", "POST"])
 def register():
-    if request.method=="POST":
-        with get_db() as db:
-            db.execute(
-                "INSERT INTO users (username,password_hash) VALUES (?,?)",
-                (request.form["username"],
-                 generate_password_hash(request.form["password"]))
+    if request.method == "POST":
+        conn, cur = get_db()
+        cur.execute(
+            """
+            INSERT INTO users (username, password_hash, role, approved, is_admin)
+            VALUES (%s, %s, 'student', false, false)
+            """,
+            (
+                request.form["username"],
+                generate_password_hash(request.form["password"])
             )
+        )
+        conn.commit()
+        conn.close()
         return "登録しました。承認待ちです。<br><a href='/login'>戻る</a>"
+
     return render_template_string(REGISTER_HTML)
+
 
 @app.route("/")
 def index():
@@ -882,34 +895,48 @@ def index():
 
 @app.route("/admin")
 def admin():
-    if session.get("role")!="admin":
+    if session.get("role") != "admin":
         return redirect("/")
-    with get_db() as db:
-        users = db.execute(
-            "SELECT id,username,is_active FROM users WHERE role='student'"
-        ).fetchall()
+
+    conn, cur = get_db()
+    cur.execute(
+        "SELECT id, username, approved FROM users WHERE role='student'"
+    )
+    users = cur.fetchall()
+    conn.close()
+
     return render_template_string(ADMIN_HTML, users=users)
+
 
 @app.route("/approve/<int:uid>")
 def approve(uid):
-    with get_db() as db:
-        db.execute("UPDATE users SET is_active=1 WHERE id=?", (uid,))
+    conn, cur = get_db()
+    cur.execute("UPDATE users SET approved=true WHERE id=%s", (uid,))
+    conn.commit()
+    conn.close()
     return redirect("/admin")
+
 
 @app.route("/reset/<int:uid>")
 def reset(uid):
-    with get_db() as db:
-        db.execute(
-            "UPDATE users SET password_hash=? WHERE id=?",
-            (generate_password_hash("1234"), uid)
-        )
+    conn, cur = get_db()
+    cur.execute(
+        "UPDATE users SET password_hash=%s WHERE id=%s",
+        (generate_password_hash("1234"), uid)
+    )
+    conn.commit()
+    conn.close()
     return redirect("/admin")
+
 
 @app.route("/delete/<int:uid>")
 def delete(uid):
-    with get_db() as db:
-        db.execute("DELETE FROM users WHERE id=?", (uid,))
+    conn, cur = get_db()
+    cur.execute("DELETE FROM users WHERE id=%s", (uid,))
+    conn.commit()
+    conn.close()
     return redirect("/admin")
+
 
 @app.route("/logout")
 def logout():
@@ -941,6 +968,12 @@ def bulk_action():
             )
 
     return redirect("/admin")
+  
+
+def get_db():
+    conn = psycopg2.connect(os.environ["DATABASE_URL"])
+    cur = conn.cursor()
+    return conn, cur
 
 
   
