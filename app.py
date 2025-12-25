@@ -1,5 +1,4 @@
 import os
-import sqlite3
 from flask import Flask, request, redirect, session, render_template_string
 from werkzeug.security import generate_password_hash, check_password_hash
 from openpyxl import load_workbook
@@ -21,13 +20,13 @@ from contextlib import contextmanager
 import psycopg2, os
 
 
-DATABASE_URL = os.environ.get("DATABASE_URL")
+DATABASE_URL = os.environ["DATABASE_URL"]
 
 @contextmanager
 def get_db():
     conn = psycopg2.connect(DATABASE_URL)
     try:
-        yield conn
+        yield conn.cursor()
         conn.commit()
     finally:
         conn.close()
@@ -47,63 +46,10 @@ except Exception as e:
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "dev-secret")
 
-DB_PATH = os.environ.get("DB_PATH", "users.db")
 EXCEL_PATH = Path("英単語テスト.xlsx")  # ← あなたの単語Excelに合わせてOK
 
 TMPDIR = Path(gettempdir()) / "word_test"
 TMPDIR.mkdir(exist_ok=True)
-
-# -------------------------
-# DB
-# -------------------------
-
-def get_db():
-    return sqlite3.connect(DB_PATH)
-
-def init_db():
-    with get_db() as db:
-        db.execute("""
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT UNIQUE NOT NULL,
-            password_hash TEXT NOT NULL,
-            role TEXT NOT NULL DEFAULT 'student',
-            is_active INTEGER NOT NULL DEFAULT 0
-        )
-        """)
-
-def ensure_admin():
-    with get_db() as db:
-
-        # ===== 管理者 =====
-        cur = db.execute(
-            "SELECT * FROM users WHERE username=?",
-            ("shingaku19minato",)
-        )
-        if cur.fetchone() is None:
-            db.execute("""
-                INSERT INTO users
-                (username, password_hash, role, is_active)
-                VALUES (?, ?, 'admin', 1)
-            """, (
-                "shingaku19minato",
-                generate_password_hash("minato0828")
-            ))
-
-        # ===== 初期ユーザー =====
-        cur = db.execute(
-            "SELECT * FROM users WHERE username=?",
-            ("minato",)
-        )
-        if cur.fetchone() is None:
-            db.execute("""
-                INSERT INTO users
-                (username, password_hash, role, is_active)
-                VALUES (?, ?, 'student', 1)
-            """, (
-                "minato",
-                generate_password_hash("3710")
-            ))
 
 
 # -------------------------
@@ -855,6 +801,7 @@ def login():
         session["user_id"] = user[0]
         session["role"] = user[3]
 
+
         return redirect("/admin" if user[3] == "admin" else "/")
 
     return render_template_string(LOGIN_HTML)
@@ -863,22 +810,24 @@ def login():
 @app.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
-        conn, cur = get_db()
-        cur.execute(
-            """
-            INSERT INTO users (username, password_hash, role, approved, is_admin)
-            VALUES (%s, %s, 'student', false, false)
-            """,
-            (
-                request.form["username"],
-                generate_password_hash(request.form["password"])
+        with get_db() as cur:
+            cur.execute(
+                """
+                INSERT INTO users (username, password_hash, role, approved)
+                VALUES (%s, %s, %s, %s)
+                """,
+                (
+                    request.form["username"],
+                    generate_password_hash(request.form["password"]),
+                    "student",
+                    False
+                )
             )
-        )
-        conn.commit()
-        conn.close()
         return "登録しました。承認待ちです。<br><a href='/login'>戻る</a>"
 
     return render_template_string(REGISTER_HTML)
+
+
 
 
 @app.route("/")
@@ -1189,11 +1138,6 @@ def make_two_page_pdf(items, sheet, start, end):
 
 
 
-# -------------------------
-# 起動時
-# -------------------------
 
-with app.app_context():
-    init_db()
-    ensure_admin()
+
 
