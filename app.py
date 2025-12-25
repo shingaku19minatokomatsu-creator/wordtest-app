@@ -21,11 +21,6 @@ from contextlib import contextmanager
 import psycopg2, os
 
 
-
-conn = psycopg2.connect(os.environ["DATABASE_URL"])
-print("DB CONNECT OK")
-conn.close()
-
 DATABASE_URL = os.environ.get("DATABASE_URL")
 
 @contextmanager
@@ -1201,3 +1196,4 @@ def make_two_page_pdf(items, sheet, start, end):
 with app.app_context():
     init_db()
     ensure_admin()
+
