@@ -375,48 +375,40 @@ HTML_TEST_TEMPLATE = """
 <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
 
 <style>
-/* ===== 画面表示 ===== */
-body {
+/* ===== HTMLテスト画面だけ ===== */
+.html-test {
   font-family: Arial, sans-serif;
-  background: #f5f5f5;   /* ★ 背景で余白を認識しやすく */
+  background: #f5f5f5;
   margin: 0;
-  padding: 16px;        /* ★ これが超重要 */
+  padding: 16px;
   touch-action: pan-y pinch-zoom;
 }
-/* ===== 画面用コンテナ ===== */
-#print-root {
+
+.html-test #print-root {
   background: #fff;
-  margin: 0 auto;        /* ★ 中央寄せ */
-  padding: 16px;         /* ★ 内側余白 */
-  max-width: 1200px;     /* ★ 画面で広がりすぎない */
+  margin: 0 auto;
+  padding: 16px;
+  max-width: 1200px;
   box-shadow: 0 2px 8px rgba(0,0,0,.15);
 }
-
 
 html, body {
   overscroll-behavior: none;
 }
 
-
 /* ===== 印刷時のみ A4 ===== */
 @media print {
-  @page {
-    size: A4 landscape;
-    margin: 15mm;
-  }
-
-  body {
+  .html-test {
     margin: 0;
     padding: 0;
     background: none;
   }
 
-  #print-root {
-    transform: scale(0.67);
+  .html-test #print-root {
+    transform: scale(0.65);
     transform-origin: top left;
-    width: calc(297mm / 0.67);
+    width: calc(297mm / 0.65);
 
-    /* ★ これを必ず追加 */
     margin: 0;
     padding: 0;
     max-width: none;
@@ -427,13 +419,6 @@ html, body {
     display: none !important;
   }
 }
-
-
-
-
-
-
-
 
 /* ===== ヘッダ ===== */
 .header {
@@ -517,10 +502,44 @@ canvas {
   button { display: none; }
 }
 
+/* ===== 操作ツールバー ===== */
+.toolbar {
+  position: fixed;
+  top: calc(12px + env(safe-area-inset-top));
+  right: calc(12px + env(safe-area-inset-right));
+  display: flex;
+  gap: 6px;
+  background: rgba(255,255,255,0.95);
+  padding: 6px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.2);
+  z-index: 1000;
+}
+
+.toolbar button {
+  font-size: 14px;
+  padding: 6px 8px;
+}
+
+@media (max-width: 900px) {
+  .toolbar {
+    top: auto;
+    bottom: calc(12px + env(safe-area-inset-bottom));
+  }
+}
+
+@media print {
+  .toolbar {
+    display: none !important;
+  }
+}
+
+
+
 </style>
 </head>
 
-<body>
+<body class="html-test">
 <div id="print-root">
 
 
@@ -537,17 +556,15 @@ canvas {
     </div>
 </div>
 
-<div style="margin-bottom:5mm">
-<button onclick="toggleAll()">解答 表示／非表示</button>
-<button onclick="setColor('black')">⚫ 黒</button>
-<button onclick="setColor('red')">🔴 赤</button>
-<button onclick="setMode('eraser')">🧽 消しゴム</button>
-<button onclick="clearAll()">🗑 全消し</button>
-<button onclick="window.print()">🖨 印刷</button>
-
-
-
+<div class="toolbar">
+  <button onclick="toggleAll()">解答</button>
+  <button onclick="setColor('black')">⚫</button>
+  <button onclick="setColor('red')">🔴</button>
+  <button onclick="setMode('eraser')">🧽</button>
+  <button onclick="clearAll()">🗑</button>
+  <button onclick="window.print()">🖨</button>
 </div>
+
 
     {% for i in range(20) %}
     {% set item  = items[i] %}
@@ -617,7 +634,8 @@ document.querySelectorAll("canvas").forEach(c=>{
   const ctx = c.getContext("2d");
 
   // ★ ここが最重要（座標系を元に戻す）
-  ctx.scale(ratio, ratio);
+  ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+
 
   let drawing = false;
 
