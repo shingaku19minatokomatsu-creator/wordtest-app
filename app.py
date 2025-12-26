@@ -951,14 +951,14 @@ def admin():
     if session.get("role") != "admin":
         return redirect("/")
 
-    conn, cur = get_db()
-    cur.execute(
-        "SELECT id, username, approved FROM users WHERE role='student'"
-    )
-    users = cur.fetchall()
-    conn.close()
+    with get_db() as cur:
+        cur.execute(
+            "SELECT id, username, approved FROM users WHERE role='student'"
+        )
+        users = cur.fetchall()
 
     return render_template_string(ADMIN_HTML, users=users)
+
 
 
 @app.route("/approve/<int:uid>")
@@ -1012,20 +1012,20 @@ def bulk_action():
     if not uids:
         return redirect("/admin")
 
-    with get_db() as db:
+    with get_db() as cur:
         if action == "approve":
-            db.executemany(
-                "UPDATE users SET is_active=1 WHERE id=?",
+            cur.executemany(
+                "UPDATE users SET approved=true WHERE id=%s",
                 [(uid,) for uid in uids]
             )
-
         elif action == "delete":
-            db.executemany(
-                "DELETE FROM users WHERE id=?",
+            cur.executemany(
+                "DELETE FROM users WHERE id=%s",
                 [(uid,) for uid in uids]
             )
 
     return redirect("/admin")
+
     
 @app.route("/generate_html_test", methods=["POST"])
 def generate_html_test():
