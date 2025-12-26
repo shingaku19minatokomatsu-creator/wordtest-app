@@ -428,6 +428,11 @@ html, body {
 
 /* ===== 印刷時のみ A4 ===== */
 @media print {
+  @page {
+    size: A4 landscape;
+    margin: 10mm;   /* ← ここが重要 */
+  }
+
   .html-test {
     margin: 0;
     padding: 0;
@@ -449,6 +454,7 @@ html, body {
     display: none !important;
   }
 }
+
 
 /* ===== ヘッダ ===== */
 .header {
@@ -564,6 +570,23 @@ canvas {
   .toolbar {
     display: none !important;
   }
+}
+
+/* 各問題行を横並びにする */
+.word-row {
+  display: flex;
+  align-items: center;
+}
+
+/* 左：問題文 */
+.word-row .question {
+  flex: 1 1 auto;   /* 残り幅を使う */
+  min-width: 0;     /* ★ これが超重要 */
+}
+
+/* 右：canvas */
+.word-row .answer {
+  flex: 0 0 180px;  /* ★ canvas列は固定 */
 }
 
 
