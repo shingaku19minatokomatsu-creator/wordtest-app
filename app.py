@@ -18,18 +18,32 @@ import psycopg2
 import os
 from contextlib import contextmanager
 import psycopg2, os
+from psycopg2.pool import SimpleConnectionPool
+from contextlib import contextmanager
+import os
+from psycopg2.errors import UniqueViolation
+
 
 
 DATABASE_URL = os.environ["DATABASE_URL"]
 
+pool = SimpleConnectionPool(
+    minconn=1,
+    maxconn=10,
+    dsn=DATABASE_URL
+)
+
 @contextmanager
 def get_db():
-    conn = psycopg2.connect(DATABASE_URL)
+    conn = pool.getconn()
+    cur = conn.cursor()
     try:
-        yield conn.cursor()
+        yield cur
         conn.commit()
     finally:
-        conn.close()
+        cur.close()
+        pool.putconn(conn)
+
 
 # ===== 日本語フォント =====
 FONT_PATH = Path("fonts/ipaexm.ttf")
@@ -64,27 +78,62 @@ LOGIN_HTML = """
 <title>ログイン</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
-body{font-family:sans-serif;background:#f5f5f5;
-display:flex;justify-content:center;align-items:center;height:100vh}
-.box{background:#fff;padding:24px;width:320px;border-radius:8px}
-input,button{width:100%;padding:10px;margin-top:10px}
-button{background:#007bff;color:#fff;border:none}
-a{display:block;text-align:center;margin-top:10px}
+body{
+  font-family:sans-serif;
+  background:#f5f5f5;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  height:100vh
+}
+.box{
+  background:#fff;
+  padding:24px;
+  width:320px;
+  border-radius:8px
+}
+input,button{
+  width:100%;
+  padding:10px;
+  margin-top:10px
+}
+button{
+  background:#007bff;
+  color:#fff;
+  border:none
+}
+a{
+  display:block;
+  text-align:center;
+  margin-top:10px
+}
+.error{
+  color:red;
+  margin-top:10px;
+  text-align:center;
+}
 </style>
 </head>
 <body>
 <div class="box">
 <h2>ログイン</h2>
+
 <form method="post">
-<input name="username" placeholder="ID" required>
-<input type="password" name="password" placeholder="パスワード" required>
-<button type="submit">ログイン</button>
+  <input name="username" placeholder="ID" required>
+  <input type="password" name="password" placeholder="パスワード" required>
+  <button type="submit">ログイン</button>
 </form>
+
+{% if error %}
+<div class="error">{{ error }}</div>
+{% endif %}
+
 <a href="/register">新規登録</a>
 </div>
 </body>
 </html>
 """
+
 
 REGISTER_HTML = """
 <!doctype html>
@@ -237,11 +286,11 @@ button:hover {
   </div>
 
   <div class="row">
-    <button type="button" onclick="doPdf()">PDF出力</button>
+    <button type="button" onclick="doPdf()">印刷用</button>
   </div>
 
   <div class="row">
-    <button type="button" onclick="doHtml()">HTMLテスト</button>
+    <button type="button" onclick="doHtml()">テスト</button>
   </div>
 </form>
 
@@ -758,6 +807,55 @@ function selectPending(){
 </body>
 </html>
 """
+PENDING_HTML = """
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>承認待ち</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+body{
+  font-family:sans-serif;
+  background:#f5f5f5;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  height:100vh;
+}
+.box{
+  background:#fff;
+  padding:24px;
+  width:360px;
+  border-radius:8px;
+  text-align:center;
+}
+button{
+  margin-top:20px;
+  padding:10px;
+  width:100%;
+  background:#007bff;
+  color:#fff;
+  border:none;
+}
+</style>
+</head>
+<body>
+<div class="box">
+  <h2>現在、承認待ちです</h2>
+  <p>
+    このアカウントは、<br>
+    管理者による承認後にログインできます。
+  </p>
+
+  <form action="/login">
+    <button type="submit">ログイン画面に戻る</button>
+  </form>
+</div>
+</body>
+</html>
+"""
+
 
 
 
@@ -780,50 +878,61 @@ def require_login():
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
+    error = None
+
     if request.method == "POST":
         u = request.form["username"]
         p = request.form["password"]
 
-        conn, cur = get_db()
-        cur.execute(
-            "SELECT id, username, password_hash, role, approved FROM users WHERE username=%s",
-            (u,)
-        )
-        user = cur.fetchone()
-        conn.close()
+        with get_db() as cur:
+            cur.execute(
+                "SELECT id, username, password_hash, role, approved FROM users WHERE username=%s",
+                (u,)
+            )
+            user = cur.fetchone()
 
         if not user or not check_password_hash(user[2], p):
-            return "ログイン失敗"
+            error = "ID または パスワードが違います"
+        elif not user[4]:
+            return redirect("/pending")
 
-        if not user[4]:
-            return "承認待ちです"
+        else:
+            session["user_id"] = user[0]
+            session["role"] = user[3]
+            return redirect("/admin" if user[3] == "admin" else "/")
 
-        session["user_id"] = user[0]
-        session["role"] = user[3]
+    return render_template_string(LOGIN_HTML, error=error)
 
 
-        return redirect("/admin" if user[3] == "admin" else "/")
-
-    return render_template_string(LOGIN_HTML)
 
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
-        with get_db() as cur:
-            cur.execute(
-                """
-                INSERT INTO users (username, password_hash, role, approved)
-                VALUES (%s, %s, %s, %s)
-                """,
-                (
-                    request.form["username"],
-                    generate_password_hash(request.form["password"]),
-                    "student",
-                    False
+        try:
+            with get_db() as cur:
+                cur.execute(
+                    """
+                    INSERT INTO users (username, password_hash, role, approved)
+                    VALUES (%s, %s, %s, %s)
+                    """,
+                    (
+                        request.form["username"],
+                        generate_password_hash(request.form["password"]),
+                        "student",
+                        False
+                    )
                 )
-            )
-        return "登録しました。承認待ちです。<br><a href='/login'>戻る</a>"
+        except UniqueViolation:
+            return """
+            <h3>このIDはすでに使われています</h3>
+            <a href="/register">戻る</a>
+            """
+
+        return """
+        登録しました。承認待ちです。<br>
+        <a href='/login'>ログイン画面へ</a>
+        """
 
     return render_template_string(REGISTER_HTML)
 
@@ -880,6 +989,11 @@ def delete(uid):
     conn.commit()
     conn.close()
     return redirect("/admin")
+  
+@app.route("/pending")
+def pending():
+    return render_template_string(PENDING_HTML)
+
 
 
 @app.route("/logout")
@@ -912,15 +1026,7 @@ def bulk_action():
             )
 
     return redirect("/admin")
-  
-
-def get_db():
-    conn = psycopg2.connect(os.environ["DATABASE_URL"])
-    cur = conn.cursor()
-    return conn, cur
-
-
-  
+    
 @app.route("/generate_html_test", methods=["POST"])
 def generate_html_test():
     data = request.get_json()
