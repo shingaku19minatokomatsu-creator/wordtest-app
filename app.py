@@ -415,6 +415,13 @@ HTML_TEST_TEMPLATE = """
   box-shadow: 0 2px 8px rgba(0,0,0,.15);
 }
 
+/* ===== 画面では canvas をはみ出させない ===== */
+.html-test canvas {
+  max-width: 100%;
+  height: auto;
+}
+
+
 html, body {
   overscroll-behavior: none;
 }
@@ -533,16 +540,18 @@ canvas {
   display: flex;
   gap: 6px;
   background: rgba(255,255,255,0.95);
-  padding: 6px;
+  padding: 4px;
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0,0,0,.2);
   z-index: 1000;
 }
 
 .toolbar button {
-  font-size: 14px;
-  padding: 6px 8px;
+  font-size: 10px;
+  padding: 4px 8px;
+  white-space: nowrap; /* 折り返さない */
 }
+
 
 @media (max-width: 900px) {
   .toolbar {
@@ -581,11 +590,11 @@ canvas {
 
 <div class="toolbar">
   <button onclick="toggleAll()">解答</button>
-  <button onclick="setColor('black')">⚫</button>
-  <button onclick="setColor('red')">🔴</button>
-  <button onclick="setMode('eraser')">🧽</button>
-  <button onclick="clearAll()">🗑</button>
-  <button onclick="window.print()">🖨</button>
+  <button onclick="setColor('black')">⚫黒</button>
+  <button onclick="setColor('red')">🔴赤</button>
+  <button onclick="setMode('eraser')">🧽消</button>
+  <button onclick="clearAll()">🗑全消</button>
+  <button onclick="window.print()">🖨印刷</button>
 </div>
 
 
