@@ -79,39 +79,62 @@ LOGIN_HTML = """
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 body{
-  font-family:sans-serif;
+  font-family: sans-serif;
   background:#f5f5f5;
+  margin: 0;
+  padding: 16px;
   display:flex;
   justify-content:center;
   align-items:center;
-  height:100vh
+  min-height:100vh;
 }
+
 .box{
   background:#fff;
   padding:24px;
-  width:320px;
-  border-radius:8px
-}
-input,button{
   width:100%;
-  padding:10px;
-  margin-top:10px
+  max-width:360px;   /* ★ 作成画面と同じ思想 */
+  border-radius:8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.15);
 }
+
+h2{
+  text-align:center;
+  margin: 0 0 16px;
+}
+
+form{
+  display: flex;
+  flex-direction: column;
+  gap: 12px;         /* ★ 縦リズム統一 */
+}
+
+input, button{
+  width:100%;
+  padding:12px;
+  font-size:16px;
+  box-sizing:border-box;
+}
+
 button{
   background:#007bff;
   color:#fff;
-  border:none
+  border:none;
+  border-radius:6px;
 }
+
 a{
   display:block;
   text-align:center;
-  margin-top:10px
+  margin-top:14px;
 }
+
 .error{
   color:red;
   margin-top:10px;
   text-align:center;
 }
+
 </style>
 </head>
 <body>
