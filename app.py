@@ -378,11 +378,21 @@ HTML_TEST_TEMPLATE = """
 /* ===== 画面表示 ===== */
 body {
   font-family: Arial, sans-serif;
+  background: #f5f5f5;   /* ★ 背景で余白を認識しやすく */
   margin: 0;
-  max-width: 100%;
-
-  touch-action: pan-y pinch-zoom;   /* ★ここを追加 */
+  padding: 16px;        /* ★ これが超重要 */
+  touch-action: pan-y pinch-zoom;
 }
+/* ===== 画面用コンテナ ===== */
+#print-root {
+  background: #fff;
+  margin: 0 auto;        /* ★ 中央寄せ */
+  padding: 16px;         /* ★ 内側余白 */
+  max-width: 1200px;     /* ★ 画面で広がりすぎない */
+  box-shadow: 0 2px 8px rgba(0,0,0,.15);
+}
+
+
 html, body {
   overscroll-behavior: none;
 }
@@ -390,31 +400,36 @@ html, body {
 
 /* ===== 印刷時のみ A4 ===== */
 @media print {
-
   @page {
     size: A4 landscape;
     margin: 15mm;
   }
 
-  html, body {
-    width: 297mm;
-    height: 210mm;
+  body {
     margin: 0;
     padding: 0;
-    overflow: hidden;
+    background: none;
   }
 
   #print-root {
-    transform: scale(0.65);
+    transform: scale(0.67);
     transform-origin: top left;
+    width: calc(297mm / 0.67);
 
-    width: calc(297mm / 0.65);   /* ★ mmで固定 */
+    /* ★ これを必ず追加 */
+    margin: 0;
+    padding: 0;
+    max-width: none;
+    box-shadow: none;
   }
 
   button {
     display: none !important;
   }
 }
+
+
+
 
 
 
