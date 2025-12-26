@@ -430,7 +430,13 @@ html, body {
 @media print {
   @page {
     size: A4 landscape;
-    margin: 10mm;   /* ← ここが重要 */
+    margin: 15mm;
+  }
+
+  html, body {
+    width: 297mm;
+    height: 210mm;
+    overflow: hidden;   /* ★ これが重要 */
   }
 
   .html-test {
@@ -440,20 +446,26 @@ html, body {
   }
 
   .html-test #print-root {
-    transform: scale(0.65);
+    transform: scale(0.63);
     transform-origin: top left;
-    width: calc(297mm / 0.65);
+
+    width: calc(297mm / 0.63);
+    height: calc(210mm / 0.63);  /* ★ 高さも固定 */
 
     margin: 0;
     padding: 0;
     max-width: none;
     box-shadow: none;
+
+    overflow: hidden;   /* ★ 念押し */
   }
 
-  button {
+  button,
+  .toolbar {
     display: none !important;
   }
 }
+
 
 
 /* ===== ヘッダ ===== */
@@ -469,13 +481,13 @@ html, body {
   display: grid;
   grid-template-columns:
     44px                 /* 番号 */
-    minmax(220px, 1fr)   /* 問題 */
-    minmax(120px, 160px) /* 解答 */
-    190px                /* canvas */
+    minmax(200px, 1fr)   /* 問題 */
+    minmax(110px, 150px) /* 解答 */
+    170px                /* canvas */
     44px
-    minmax(220px, 1fr)
-    minmax(120px, 160px)
-    190px;
+    minmax(200px, 1fr)
+    minmax(110px, 150px)
+    170px;
 
   height: 40px;
   align-items: center;
