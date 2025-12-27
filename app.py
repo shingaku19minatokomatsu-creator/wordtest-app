@@ -227,7 +227,7 @@ html, body {
   }
 
   button,
-  .toolbar {
+  .toolba
     display: none !important;
   }
 }
@@ -409,20 +409,19 @@ HTML_TEST_TEMPLATE = """
 <style>
 /* ===== HTMLテスト画面だけ ===== */
 .html-test {
-  font-family: Arial, sans-serif;
-  background: #f5f5f5;
   margin: 0;
-  padding: 16px;
-  touch-action: pan-y pinch-zoom;
+  padding: 0;
+  background: #f5f5f5;
 }
 
 .html-test #print-root {
   background: #fff;
-  margin: 0 auto;
-  padding: 16px;
-  max-width: 1200px;
-  box-shadow: 0 2px 8px rgba(0,0,0,.15);
+  margin: 0;
+  padding: 0 20px;   /* ← 左右だけスペース */
+  max-width: none;   /* ★ 全画面 */
+  box-shadow: none;
 }
+
 
 /* ===== 画面では canvas をはみ出させない ===== */
 .html-test canvas {
@@ -439,8 +438,14 @@ html, body {
 .header {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 6mm;
+  margin-bottom: 4mm;
 }
+
+.header canvas {
+  vertical-align: middle;
+  margin-right: 8px;
+}
+
 
 /* ===== 画面表示用 ===== */
 .item {
@@ -588,10 +593,10 @@ canvas {
     <h2>shingaku19minato test</h2>
     <div>words {{sheet}}（{{start}}～{{end}}）</div>
   </div>
-    <div>
-        name：<canvas width="160" height="28"></canvas><br>
-        score：<canvas width="160" height="28"></canvas>
-    </div>
+  <div>
+    name：<canvas width="140" height="28"></canvas>
+    score：<canvas width="140" height="28"></canvas>
+  </div>
 </div>
 
 <div class="toolbar">
