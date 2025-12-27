@@ -473,18 +473,18 @@ html, body {
     minmax(220px, 1fr)
     minmax(120px, 160px)
     180px
-    20px;
-  padding: 0 20px;      /* ← 左右の安全域 */
-  padding-right: 20px;
+    20px;   /* ★ 右余白はここだけ */
+
+  padding: 0;           /* ★ 削除 */
   height: 40px;
   align-items: center;
-  font-size: 13px;
   box-sizing: border-box;
 }
 
 
+
 .item.dummy {
-  height: 40px;
+  height: 36px;
 }
 
 
