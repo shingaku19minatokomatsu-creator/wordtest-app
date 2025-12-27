@@ -650,13 +650,15 @@ canvas {
         <div>{{item.no}}.</div>
         <div>{{item.q}}</div>
         <div class="answer" id="ans-{{item.no}}">{{item.a}}</div>
-        <canvas></canvas>
+        <canvas width="160" height="28"></canvas>
+
 
         <!-- 右（21〜40） -->
         <div>{{item2.no}}.</div>
         <div>{{item2.q}}</div>
         <div class="answer" id="ans-{{item2.no}}">{{item2.a}}</div>
-        <canvas></canvas>
+        <canvas width="160" height="28"></canvas>
+
     </div>
 
     {% endfor %}
@@ -691,14 +693,15 @@ function toggleAll(){
 }
 
 
-document.querySelectorAll("canvas").forEach(c=>{
+document.querySelectorAll("canvas").forEach(c => {
+
+  if (window.matchMedia("print").matches) return;
+
   const ratio = window.devicePixelRatio || 1;
 
   // ===== ① CSSサイズを保存（テンプレそのまま）=====
-  const rect = c.getBoundingClientRect();
-  const cssW = rect.width;
-  const cssH = rect.height;
-
+  const cssW = c.width;
+  const cssH = c.height;
 
   // ===== ② 内部解像度だけ拡大 =====
   c.width  = cssW * ratio;
