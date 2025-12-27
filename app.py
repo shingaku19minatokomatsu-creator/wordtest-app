@@ -219,11 +219,15 @@ html, body {
     margin: 0;
     padding: 0;
   }
+  
+  canvas {
+    background: #fff;
+  }
 
   #print-root {
-    transform: scale(0.65);
+    transform: scale(0.70);
     transform-origin: top left;
-    width: calc(100% / 0.65);
+    width: calc(100% / 0.70);
   }
 
   .toolbar,
@@ -593,11 +597,15 @@ canvas {
     margin: 0;
     padding: 0;
   }
+  
+  canvas {
+    background: #fff;
+  }
 
   #print-root {
-    transform: scale(0.65);
+    transform: scale(0.70);
     transform-origin: top left;
-    width: calc(100% / 0.65);
+    width: calc(100% / 0.70);
   }
 
   .toolbar,
