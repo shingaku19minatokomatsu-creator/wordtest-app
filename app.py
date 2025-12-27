@@ -222,7 +222,6 @@ html, body {
     padding: 0;
   }
 
-  /* bodyサイズは固定しない */
   body {
     width: auto;
     height: auto;
@@ -236,42 +235,41 @@ html, body {
     box-shadow: none;
   }
 
-  /* ===== 行レイアウト（mm固定） ===== */
+  /* ===== ★ここが重要（実寸縮小版） ===== */
   .html-test #print-root .item {
     display: grid !important;
     grid-template-columns:
-      8mm
-      60mm
-      32mm
+      7mm
+      55mm
       30mm
-      8mm
-      60mm
-      32mm
-      30mm !important;
+      28mm
+      7mm
+      55mm
+      30mm
+      28mm !important;
 
-    height: 9mm !important;
+    height: 8.5mm !important;
     align-items: center;
-    font-size: 10pt;
+    font-size: 9.5pt;
 
     break-inside: avoid !important;
     page-break-inside: avoid !important;
   }
 
-  /* ===== canvas を完全制御 ===== */
   .html-test #print-root .item canvas {
-    width: 30mm !important;
-    height: 7mm !important;
-    max-width: 30mm !important;
-    max-height: 7mm !important;
+    width: 28mm !important;
+    height: 6.5mm !important;
+    max-width: 28mm !important;
+    max-height: 6.5mm !important;
     display: block !important;
   }
 
-  /* ===== 余計なUI削除 ===== */
   button,
   .toolbar {
     display: none !important;
   }
 }
+
 
 
 
@@ -652,13 +650,13 @@ canvas {
         <div>{{item.no}}.</div>
         <div>{{item.q}}</div>
         <div class="answer" id="ans-{{item.no}}">{{item.a}}</div>
-        <canvas width="180" height="36"></canvas>
+        <canvas></canvas>
 
         <!-- 右（21〜40） -->
         <div>{{item2.no}}.</div>
         <div>{{item2.q}}</div>
         <div class="answer" id="ans-{{item2.no}}">{{item2.a}}</div>
-        <canvas width="180" height="36"></canvas>
+        <canvas></canvas>
     </div>
 
     {% endfor %}
@@ -697,8 +695,10 @@ document.querySelectorAll("canvas").forEach(c=>{
   const ratio = window.devicePixelRatio || 1;
 
   // ===== ① CSSサイズを保存（テンプレそのまま）=====
-  const cssW = c.width;
-  const cssH = c.height;
+  const rect = c.getBoundingClientRect();
+  const cssW = rect.width;
+  const cssH = rect.height;
+
 
   // ===== ② 内部解像度だけ拡大 =====
   c.width  = cssW * ratio;
