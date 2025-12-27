@@ -212,7 +212,7 @@ html, body {
 @media print {
   @page {
     size: A4 landscape;
-    margin: 0;
+    margin: 15mm;   /* ← app3 と同じ */
   }
 
   html, body {
@@ -220,7 +220,11 @@ html, body {
     padding: 0;
   }
 
-  /* ❌ transform: scale は削除 */
+  #print-root {
+    transform: scale(0.65);
+    transform-origin: top left;
+    width: calc(100% / 0.65);
+  }
 
   .toolbar,
   button {
@@ -582,7 +586,7 @@ canvas {
 @media print {
   @page {
     size: A4 landscape;
-    margin: 0;
+    margin: 15mm;   /* ← app3 と同じ */
   }
 
   html, body {
@@ -590,7 +594,11 @@ canvas {
     padding: 0;
   }
 
-  /* ❌ transform: scale は削除 */
+  #print-root {
+    transform: scale(0.65);
+    transform-origin: top left;
+    width: calc(100% / 0.65);
+  }
 
   .toolbar,
   button {
