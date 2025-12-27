@@ -224,6 +224,8 @@ html, body {
     transform: scale(0.65);
     transform-origin: top left;
     width: calc(100% / 0.65);
+    height: calc(100vh / 0.65);
+    overflow: hidden;
   }
 
   button,
@@ -442,6 +444,16 @@ html, body {
   margin-bottom: 4mm;
 }
 
+.header-right {
+  margin-top: 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  white-space: nowrap;
+}
+
+
+
 .header canvas {
   vertical-align: middle;
   margin-right: 8px;
@@ -580,6 +592,35 @@ canvas {
   flex: 0 0 180px;  /* ★ canvas列は固定 */
 }
 
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 0;
+  }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+  }
+
+  body.html-test {
+    background: #fff;
+  }
+
+  #print-root {
+    transform: scale(0.65);
+    transform-origin: top left;
+    width: calc(100% / 0.65);
+    padding-bottom: 40mm;   /* ← 下はみ出し防止の本体 */
+    box-sizing: border-box;
+  }
+
+  .toolbar,
+  button {
+    display: none !important;
+  }
+}
+
 
 
 </style>
@@ -589,12 +630,13 @@ canvas {
 <div id="print-root">
 
 
-<div class=\"header\">
+<div class="header">
   <div>
     <h2>shingaku19minato test</h2>
     <div>words {{sheet}}（{{start}}～{{end}}）</div>
   </div>
-  <div>
+
+  <div class="header-right">
     name：<canvas width="140" height="28"></canvas>
     score：<canvas width="140" height="28"></canvas>
   </div>
