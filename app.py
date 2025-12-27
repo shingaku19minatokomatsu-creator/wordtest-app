@@ -224,8 +224,9 @@ html, body {
     transform: scale(0.65);
     transform-origin: top left;
     width: calc(100% / 0.65);
-    height: calc(100vh / 0.65);
-    overflow: hidden;
+
+    padding-bottom: 30mm;   /* 下だけ逃がす */
+    box-sizing: border-box;
   }
 
   button,
@@ -471,7 +472,7 @@ html, body {
     44px
     minmax(220px, 1fr)
     minmax(120px, 160px)
-    180px;
+    180px
     20px;
   padding: 0 20px;      /* ← 左右の安全域 */
   padding-right: 20px;
@@ -604,7 +605,7 @@ canvas {
     transform-origin: top left;
     width: calc(100% / 0.65);
 
-    padding-bottom: 40mm;   /* ★ 下はみ出し防止 */
+    padding-bottom: 30mm;   /* 下だけ逃がす */
     box-sizing: border-box;
   }
 
