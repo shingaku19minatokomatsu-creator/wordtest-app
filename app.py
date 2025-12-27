@@ -210,11 +210,9 @@ html, body {
 }
 
 @media print {
-
-  /* ===== 用紙設定 ===== */
   @page {
     size: A4 landscape;
-    margin: 15mm;
+    margin: 0;
   }
 
   html, body {
@@ -222,46 +220,10 @@ html, body {
     padding: 0;
   }
 
-  body {
-    width: auto;
-    height: auto;
-  }
-
-  /* ===== 印刷対象 ===== */
-  .html-test #print-root {
-    width: 100%;
-    margin: 0;
-    padding: 0;
-    box-shadow: none;
-  }
-
-  /* ===== ★ここが重要（実寸縮小版） ===== */
-  .html-test #print-root .item {
-    display: grid !important;
-    grid-template-columns:
-      7mm
-      55mm
-      30mm
-      28mm
-      7mm
-      55mm
-      30mm
-      28mm !important;
-
-    height: 8.5mm !important;
-    align-items: center;
-    font-size: 9.5pt;
-
-    break-inside: avoid !important;
-    page-break-inside: avoid !important;
-  }
-
-  .html-test #print-root .item canvas {
-    width: 28mm !important;
-    height: 6.5mm !important;
-    max-width: 28mm !important;
-    max-height: 6.5mm !important;
-    display: block !important;
+  #print-root {
+    transform: scale(0.65);
+    transform-origin: top left;
+    width: calc(100% / 0.65);
   }
 
   button,
@@ -269,9 +231,6 @@ html, body {
     display: none !important;
   }
 }
-
-
-
 
 h2 {
     font-size: 26px;
@@ -480,7 +439,7 @@ html, body {
 .header {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 10mm;
+  margin-bottom: 6mm;
 }
 
 /* ===== 画面表示用 ===== */
@@ -490,16 +449,22 @@ html, body {
     44px
     minmax(220px, 1fr)
     minmax(120px, 160px)
-    190px
+    180px
     44px
     minmax(220px, 1fr)
     minmax(120px, 160px)
-    190px;
+    180px;
 
+  padding: 0 20px;      /* ← 左右の安全域 */
   height: 40px;
   align-items: center;
   font-size: 13px;
   box-sizing: border-box;
+}
+
+
+.item.dummy {
+  height: 40px;
 }
 
 
@@ -624,10 +589,8 @@ canvas {
     <div>words {{sheet}}（{{start}}～{{end}}）</div>
   </div>
     <div>
-        name：
-        <canvas width="160" height="28"></canvas><br>
-        score：
-        <canvas width="160" height="28"></canvas>
+        name：<canvas width="160" height="28"></canvas><br>
+        score：<canvas width="160" height="28"></canvas>
     </div>
 </div>
 
@@ -660,9 +623,11 @@ canvas {
         <canvas width="160" height="28"></canvas>
 
     </div>
-
+    
     {% endfor %}
-
+    
+    <div class="item dummy"></div>
+    
 <script>
 let mode = "pen";
 let color = "#000";
