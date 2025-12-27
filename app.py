@@ -474,6 +474,7 @@ html, body {
     180px;
     20px;
   padding: 0 20px;      /* ← 左右の安全域 */
+  padding-right: 20px;
   height: 40px;
   align-items: center;
   font-size: 13px;
@@ -536,10 +537,6 @@ canvas {
   line-height: 1.1;
 }
 
-/* ===== 印刷時 ===== */
-@media print {
-  button { display: none; }
-}
 
 /* ===== 操作ツールバー ===== */
 .toolbar {
@@ -569,11 +566,6 @@ canvas {
   }
 }
 
-@media print {
-  .toolbar {
-    display: none !important;
-  }
-}
 
 /* 各問題行を横並びにする */
 .word-row {
@@ -611,7 +603,8 @@ canvas {
     transform: scale(0.65);
     transform-origin: top left;
     width: calc(100% / 0.65);
-    padding-bottom: 40mm;   /* ← 下はみ出し防止の本体 */
+
+    padding-bottom: 40mm;   /* ★ 下はみ出し防止 */
     box-sizing: border-box;
   }
 
