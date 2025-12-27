@@ -210,17 +210,69 @@ html, body {
 }
 
 @media print {
+
+  /* ===== 用紙設定 ===== */
   @page {
     size: A4 landscape;
     margin: 15mm;
   }
 
-  body {
-    width: 297mm;
-    height: 210mm;
+  html, body {
+    margin: 0;
     padding: 0;
   }
+
+  /* bodyサイズは固定しない */
+  body {
+    width: auto;
+    height: auto;
+  }
+
+  /* ===== 印刷対象 ===== */
+  .html-test #print-root {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    box-shadow: none;
+  }
+
+  /* ===== 行レイアウト（mm固定） ===== */
+  .html-test #print-root .item {
+    display: grid !important;
+    grid-template-columns:
+      8mm
+      60mm
+      32mm
+      30mm
+      8mm
+      60mm
+      32mm
+      30mm !important;
+
+    height: 9mm !important;
+    align-items: center;
+    font-size: 10pt;
+
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* ===== canvas を完全制御 ===== */
+  .html-test #print-root .item canvas {
+    width: 30mm !important;
+    height: 7mm !important;
+    max-width: 30mm !important;
+    max-height: 7mm !important;
+    display: block !important;
+  }
+
+  /* ===== 余計なUI削除 ===== */
+  button,
+  .toolbar {
+    display: none !important;
+  }
 }
+
 
 
 h2 {
@@ -425,66 +477,6 @@ HTML_TEST_TEMPLATE = """
 html, body {
   overscroll-behavior: none;
 }
-
-/* ===== 印刷時のみ A4 ===== */
-@media print {
-
-  @page {
-    size: A4 landscape;
-    margin: 15mm;
-  }
-
-  html, body {
-    width: 297mm;
-    height: 210mm;
-    margin: 0;
-    padding: 0;
-  }
-
-  .html-test {
-    background: none;
-    padding: 0;
-    margin: 0;
-  }
-
-  .html-test #print-root {
-    width: 100%;
-    margin: 0;
-    padding: 0;
-    box-shadow: none;
-  }
-
-  /* ★ 印刷専用：mm固定 */
-  .item {
-    display: grid;
-    grid-template-columns:
-      8mm
-      60mm
-      32mm
-      30mm
-      8mm
-      60mm
-      32mm
-      30mm;
-
-    height: 9mm;
-    align-items: center;
-    font-size: 10pt;
-  }
-
-  .item canvas {
-    width: 30mm !important;
-    height: 7mm !important;
-  }
-
-  button,
-  .toolbar {
-    display: none !important;
-  }
-}
-
-
-
 
 /* ===== ヘッダ ===== */
 .header {
@@ -1359,3 +1351,9 @@ def make_two_page_pdf(items, sheet, start, end):
 
     c.save()
     return filename
+
+
+
+
+
+
