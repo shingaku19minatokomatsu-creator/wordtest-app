@@ -220,20 +220,14 @@ html, body {
     padding: 0;
   }
 
-  #print-root {
-    transform: scale(0.65);
-    transform-origin: top left;
-    width: calc(100% / 0.65);
+  /* ❌ transform: scale は削除 */
 
-    padding-bottom: 30mm;   /* 下だけ逃がす */
-    box-sizing: border-box;
-  }
-
-  button,
-  .toolbar {
+  .toolbar,
+  button {
     display: none !important;
   }
 }
+
 
 
 h2 {
@@ -596,24 +590,15 @@ canvas {
     padding: 0;
   }
 
-  body.html-test {
-    background: #fff;
-  }
-
-  #print-root {
-    transform: scale(0.65);
-    transform-origin: top left;
-    width: calc(100% / 0.65);
-
-    padding-bottom: 30mm;   /* 下だけ逃がす */
-    box-sizing: border-box;
-  }
+  /* ❌ transform: scale は削除 */
 
   .toolbar,
   button {
     display: none !important;
   }
 }
+
+
 
 
 
