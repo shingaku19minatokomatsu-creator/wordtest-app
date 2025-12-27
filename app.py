@@ -227,10 +227,11 @@ html, body {
   }
 
   button,
-  .toolba
+  .toolbar {
     display: none !important;
   }
 }
+
 
 h2 {
     font-size: 26px;
@@ -459,7 +460,7 @@ html, body {
     minmax(220px, 1fr)
     minmax(120px, 160px)
     180px;
-
+    20px;
   padding: 0 20px;      /* ← 左右の安全域 */
   height: 40px;
   align-items: center;
