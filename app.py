@@ -428,6 +428,7 @@ html, body {
 
 /* ===== 印刷時のみ A4 ===== */
 @media print {
+
   @page {
     size: A4 landscape;
     margin: 15mm;
@@ -436,28 +437,44 @@ html, body {
   html, body {
     width: 297mm;
     height: 210mm;
-    overflow: hidden;   /* ★ これが重要 */
+    margin: 0;
+    padding: 0;
   }
 
   .html-test {
-    margin: 0;
-    padding: 0;
     background: none;
+    padding: 0;
+    margin: 0;
   }
 
   .html-test #print-root {
-    transform: scale(0.63);
-    transform-origin: top left;
-
-    width: calc(297mm / 0.63);
-    height: calc(210mm / 0.63);  /* ★ 高さも固定 */
-
+    width: 100%;
     margin: 0;
     padding: 0;
-    max-width: none;
     box-shadow: none;
+  }
 
-    overflow: hidden;   /* ★ 念押し */
+  /* ★ 印刷専用：mm固定 */
+  .item {
+    display: grid;
+    grid-template-columns:
+      8mm
+      60mm
+      32mm
+      30mm
+      8mm
+      60mm
+      32mm
+      30mm;
+
+    height: 9mm;
+    align-items: center;
+    font-size: 10pt;
+  }
+
+  .item canvas {
+    width: 30mm !important;
+    height: 7mm !important;
   }
 
   button,
@@ -468,6 +485,7 @@ html, body {
 
 
 
+
 /* ===== ヘッダ ===== */
 .header {
   display: flex;
@@ -475,25 +493,25 @@ html, body {
   margin-bottom: 10mm;
 }
 
-/* ===== 2列（PDFと同じ） ===== */
-
+/* ===== 画面表示用 ===== */
 .item {
   display: grid;
   grid-template-columns:
-    44px                 /* 番号 */
-    minmax(200px, 1fr)   /* 問題 */
-    minmax(110px, 150px) /* 解答 */
-    170px                /* canvas */
     44px
-    minmax(200px, 1fr)
-    minmax(110px, 150px)
-    170px;
+    minmax(220px, 1fr)
+    minmax(120px, 160px)
+    190px
+    44px
+    minmax(220px, 1fr)
+    minmax(120px, 160px)
+    190px;
 
   height: 40px;
   align-items: center;
   font-size: 13px;
   box-sizing: border-box;
 }
+
 
 
 .answer {
@@ -1341,9 +1359,3 @@ def make_two_page_pdf(items, sheet, start, end):
 
     c.save()
     return filename
-
-
-
-
-
-
