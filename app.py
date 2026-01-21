@@ -412,7 +412,8 @@ HTML_TEST_TEMPLATE = """
 <head>
 <meta charset=\"utf-8\">
 <title>単語テスト（HTML）</title>
-<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0, user-scalable=no">
 
 <style>
 /* ===== HTMLテスト画面だけ ===== */
@@ -560,9 +561,9 @@ canvas {
 
 /* ===== 描画・ズームレイヤー ===== */
 #content-layer {
-  touch-action: pan-y pinch-zoom;
+  transform-origin: top left;
+  transform: scale(1);
 }
-
 
 /* ===== 操作ツールバー ===== */
 .toolbar {
@@ -815,6 +816,46 @@ document.querySelectorAll('.answer, .item > div:nth-child(2), .item > div:nth-ch
       el.classList.add('small-text');
     }
   });
+
+<script>
+let scale = 1;
+let startDist = null;
+
+function getDist(touches){
+  const dx = touches[0].clientX - touches[1].clientX;
+  const dy = touches[0].clientY - touches[1].clientY;
+  return Math.hypot(dx, dy);
+}
+
+document.getElementById("content-layer")
+  .addEventListener("touchstart", e => {
+    if(e.touches.length === 2){
+      startDist = getDist(e.touches);
+    }
+  }, { passive:false });
+
+document.getElementById("content-layer")
+  .addEventListener("touchmove", e => {
+    if(e.touches.length === 2 && startDist){
+      e.preventDefault();
+
+      const d = getDist(e.touches);
+      scale *= d / startDist;
+      scale = Math.min(Math.max(scale, 0.6), 2.5);
+
+      document.getElementById("content-layer")
+        .style.transform = `scale(${scale})`;
+
+      startDist = d;
+    }
+  }, { passive:false });
+
+document.getElementById("content-layer")
+  .addEventListener("touchend", ()=>{
+    startDist = null;
+  });
+</script>
+
 
 </script>
 
