@@ -639,6 +639,22 @@ canvas {
   }
 }
 
+/* ===== スクロール担当レイヤー ===== */
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden; /* bodyのスクロールを殺す */
+}
+
+#scroll-layer {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: auto;   /* ← スクロールはここだけ */
+  background: #f5f5f5;
+}
 
 
 
@@ -661,44 +677,46 @@ canvas {
 </div>
 
 <!-- ===== 描画・ズームレイヤー ===== -->
-<div id="content-layer">
-  <div id="print-root">
+  <div id="scroll-layer">
+   <div id="content-layer">
+    <div id="print-root">
 
-    <div class="header">
-      <div>
-        <h2>shingaku19minato test</h2>
-        <div>words {{sheet}}（{{start}}～{{end}}）</div>
-      </div>
+        <div class="header">
+        <div>
+            <h2>shingaku19minato test</h2>
+            <div>words {{sheet}}（{{start}}～{{end}}）</div>
+        </div>
 
-      <div class="header-right">
-        name：<canvas width="140" height="28"></canvas>
-        score：<canvas width="140" height="28"></canvas>
-      </div>
+        <div class="header-right">
+            name：<canvas width="140" height="28"></canvas>
+            score：<canvas width="140" height="28"></canvas>
+        </div>
+        </div>
+
+    {% for i in range(20) %}
+    {% set item  = items[i] %}
+    {% set item2 = items[i+20] %}
+
+    <div class="item">
+    <!-- 左（1〜20） -->
+    <div>{{item.no}}.</div>
+    <div>{{item.q}}</div>
+    <div class="answer" id="ans-{{item.no}}">{{item.a}}</div>
+    <canvas width="160" height="28"></canvas>
+
+    <!-- 右（21〜40） -->
+    <div>{{item2.no}}.</div>
+    <div>{{item2.q}}</div>
+    <div class="answer" id="ans-{{item2.no}}">{{item2.a}}</div>
+    <canvas width="160" height="28"></canvas>
     </div>
 
-{% for i in range(20) %}
-{% set item  = items[i] %}
-{% set item2 = items[i+20] %}
+    {% endfor %}
+    <div class="item dummy"></div>
 
-<div class="item">
-  <!-- 左（1〜20） -->
-  <div>{{item.no}}.</div>
-  <div>{{item.q}}</div>
-  <div class="answer" id="ans-{{item.no}}">{{item.a}}</div>
-  <canvas width="160" height="28"></canvas>
-
-  <!-- 右（21〜40） -->
-  <div>{{item2.no}}.</div>
-  <div>{{item2.q}}</div>
-  <div class="answer" id="ans-{{item2.no}}">{{item2.a}}</div>
-  <canvas width="160" height="28"></canvas>
-</div>
-
-{% endfor %}
-<div class="item dummy"></div>
-
-  </div> <!-- print-root -->
-</div> <!-- content-layer -->
+    </div> <!-- print-root -->
+   </div> <!-- content-layer -->
+  </div>     <!-- scroll-layer -->
 
 <script>
 
@@ -821,7 +839,8 @@ document.querySelectorAll('.answer, .item > div:nth-child(2), .item > div:nth-ch
     }
   });
   
-/* ===== ピンチズーム（スクロール対応・最小倍率制御）===== */
+/* ===== ピンチズーム（最終安定版）===== */
+const scrollLayer  = document.getElementById("scroll-layer");
 const contentLayer = document.getElementById("content-layer");
 
 let scale = 1;
@@ -833,10 +852,10 @@ function getDistance(t1, t2){
   return Math.hypot(dx, dy);
 }
 
-/* ★ 画面にフィットする最小倍率を計算 */
+/* scroll-layer 基準で最小倍率を決める */
 function getMinScale(){
-  const vw = window.innerWidth;
-  const vh = window.innerHeight;
+  const vw = scrollLayer.clientWidth;
+  const vh = scrollLayer.clientHeight;
 
   const rect = contentLayer.getBoundingClientRect();
   const sx = vw / rect.width;
@@ -845,22 +864,19 @@ function getMinScale(){
   return Math.min(sx, sy, 1);
 }
 
-/* ★ 見た目 + スクロール領域を同時に調整 */
 function applyScale(){
   contentLayer.style.transform = `scale(${scale})`;
-  contentLayer.style.width  = `${100 / scale}%`;
-  contentLayer.style.height = `${100 / scale}%`;
 }
 
-document.addEventListener("touchstart", e => {
+scrollLayer.addEventListener("touchstart", e => {
   if (e.touches.length === 2) {
     startDist = getDistance(e.touches[0], e.touches[1]);
   }
 }, { passive: false });
 
-document.addEventListener("touchmove", e => {
+scrollLayer.addEventListener("touchmove", e => {
   if (e.touches.length === 2) {
-    e.preventDefault();
+    e.preventDefault();   // ← ブラウザズームだけ止める
 
     const newDist = getDistance(e.touches[0], e.touches[1]);
     const delta = newDist / startDist;
@@ -873,15 +889,9 @@ document.addEventListener("touchmove", e => {
   }
 }, { passive: false });
 
-window.addEventListener("resize", () => {
-  scale = Math.max(getMinScale(), scale);
-  applyScale();
-});
-
-/* 初期状態：画面いっぱいにフィット */
+/* 初期状態：画面フィット */
 scale = getMinScale();
 applyScale();
-
 
 </script>
 
