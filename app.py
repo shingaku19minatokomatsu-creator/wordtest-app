@@ -560,9 +560,9 @@ canvas {
   right: calc(12px + env(safe-area-inset-right));
 }
 
-/* ===== 描画・ズームレイヤー ===== */
 #content-layer {
-  touch-action: pan-y pinch-zoom;
+  touch-action: none;
+  transform-origin: 0 0;
 }
 
 
@@ -701,6 +701,8 @@ canvas {
 
 <script>
 
+console.log("content-layer =", document.getElementById("content-layer"));
+
 let mode = "pen";
 let color = "#000";
 
@@ -817,6 +819,40 @@ document.querySelectorAll('.answer, .item > div:nth-child(2), .item > div:nth-ch
       el.classList.add('small-text');
     }
   });
+  
+/* ===== ピンチズーム（content-layerのみ拡大）===== */
+const contentLayer = document.getElementById("content-layer");
+
+let scale = 1;
+let startDist = null;
+
+function getDistance(t1, t2){
+  const dx = t1.clientX - t2.clientX;
+  const dy = t1.clientY - t2.clientY;
+  return Math.hypot(dx, dy);
+}
+
+document.addEventListener("touchstart", e => {
+  if (e.touches.length === 2) {
+    startDist = getDistance(e.touches[0], e.touches[1]);
+  }
+}, { passive: false });
+
+document.addEventListener("touchmove", e => {
+  if (e.touches.length === 2) {
+    e.preventDefault(); // ← ブラウザズーム阻止
+
+    const newDist = getDistance(e.touches[0], e.touches[1]);
+    const delta = newDist / startDist;
+
+    scale = Math.min(3, Math.max(0.5, scale * delta));
+    startDist = newDist;
+
+    contentLayer.style.transform = `scale(${scale})`;
+    contentLayer.style.transformOrigin = "0 0";
+  }
+}, { passive: false });
+
 
 </script>
 
@@ -951,39 +987,6 @@ function selectPending(){
       if(cb) cb.checked = true;
     }
   });
-}
-
-let scale = 1;
-const content = document.getElementById("content-layer");
-
-/* ===== ピンチズーム ===== */
-let startDist = 0;
-
-document.addEventListener("touchstart", e => {
-  if (e.touches.length === 2) {
-    startDist = getDist(e.touches[0], e.touches[1]);
-  }
-}, { passive: false });
-
-document.addEventListener("touchmove", e => {
-  if (e.touches.length === 2) {
-    e.preventDefault();
-
-    const dist = getDist(e.touches[0], e.touches[1]);
-    const delta = dist / startDist;
-
-    scale = Math.min(3, Math.max(0.5, scale * delta));
-    startDist = dist;
-
-    content.style.transform = `scale(${scale})`;
-    content.style.transformOrigin = "0 0";
-  }
-}, { passive: false });
-
-function getDist(t1, t2) {
-  const dx = t1.clientX - t2.clientX;
-  const dy = t1.clientY - t2.clientY;
-  return Math.hypot(dx, dy);
 }
 </script>
 
