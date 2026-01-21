@@ -878,17 +878,17 @@ function getMinScale(){
 function applyScale(cx, cy){
   const rect = contentLayer.getBoundingClientRect();
 
-  // 指の位置（contentLayer 内座標）
+  // 指の位置（contentLayer 内）
   const originX = cx - rect.left;
   const originY = cy - rect.top;
 
-  // ★ ここが決定打
+  // transform-origin を指の位置に
   contentLayer.style.transformOrigin = `${originX}px ${originY}px`;
-  contentLayer.style.transform = `scale(${scale})`;
 
-  contentLayer.style.width  = (100 / scale) + "%";
-  contentLayer.style.height = (100 / scale) + "%";
+  // scale のみ適用（scrollは触らない）
+  contentLayer.style.transform = `scale(${scale})`;
 }
+
 
 
 
