@@ -561,12 +561,10 @@ canvas {
 }
 
 #content-layer {
-  min-width: 100%;
   transform-origin: 0 0;
-  touch-action: pan-x pan-y;  /* ← これに変更 */
-  will-change: transform;
+  min-width: 100%;
+  min-height: 100%;
 }
-
 
 /* ===== 操作ツールバー ===== */
 .toolbar {
@@ -867,7 +865,12 @@ function getMinScale(){
 
 function applyScale(){
   contentLayer.style.transform = `scale(${scale})`;
+
+  // ★ スクロール領域を正しく拡張する
+  contentLayer.style.width  = (100 / scale) + "%";
+  contentLayer.style.height = (100 / scale) + "%";
 }
+
 
 scrollLayer.addEventListener("touchstart", e => {
   if (e.touches.length === 2) {
