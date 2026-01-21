@@ -855,12 +855,12 @@ function getDistance(t1, t2){
 }
 
 function getCenter(t1, t2){
-  const rect = scrollLayer.getBoundingClientRect();
   return {
-    x: (t1.clientX + t2.clientX) / 2 - rect.left + scrollLayer.scrollLeft,
-    y: (t1.clientY + t2.clientY) / 2 - rect.top  + scrollLayer.scrollTop
+    x: (t1.clientX + t2.clientX) / 2,
+    y: (t1.clientY + t2.clientY) / 2
   };
 }
+
 
 
 
@@ -877,18 +877,22 @@ function getMinScale(){
 }
 
 function applyScale(cx, cy){
-  // cx, cy は「scrollLayer 内の論理座標」
-  const ox = cx / scale;
-  const oy = cy / scale;
+  const rect = contentLayer.getBoundingClientRect();
 
+  // ズーム前：指の下にある「論理座標」
+  const ox = (cx - rect.left) / scale;
+  const oy = (cy - rect.top ) / scale;
+
+  // scale 適用
   contentLayer.style.transform = `scale(${scale})`;
   contentLayer.style.width  = (100 / scale) + "%";
   contentLayer.style.height = (100 / scale) + "%";
 
-  // 同じ論理点が指の下に残るよう補正
-  scrollLayer.scrollLeft = ox * scale - scrollLayer.clientWidth  / 2;
-  scrollLayer.scrollTop  = oy * scale - scrollLayer.clientHeight / 2;
+  // ズーム後：同じ論理座標が指の下に来るよう scroll を補正
+  scrollLayer.scrollLeft += ox * scale - (cx - rect.left);
+  scrollLayer.scrollTop  += oy * scale - (cy - rect.top);
 }
+
 
 scrollLayer.addEventListener("touchstart", e => {
   if (e.touches.length === 2) {
