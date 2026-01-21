@@ -207,7 +207,9 @@ body {
 
 html, body {
   overscroll-behavior: none;
+  touch-action: auto;   /* ★ これを必ず追加 */
 }
+
 
 @media print {
   @page {
