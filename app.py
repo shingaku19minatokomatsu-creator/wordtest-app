@@ -415,6 +415,7 @@ HTML_TEST_TEMPLATE = """
 <meta name="viewport"
       content="width=device-width, initial-scale=1.0, user-scalable=no">
 
+
 <style>
 /* ===== HTMLテスト画面だけ ===== */
 .html-test {
@@ -561,9 +562,9 @@ canvas {
 
 /* ===== 描画・ズームレイヤー ===== */
 #content-layer {
-  transform-origin: top left;
-  transform: scale(1);
+  touch-action: pan-y pinch-zoom;
 }
+
 
 /* ===== 操作ツールバー ===== */
 .toolbar {
@@ -817,46 +818,6 @@ document.querySelectorAll('.answer, .item > div:nth-child(2), .item > div:nth-ch
     }
   });
 
-<script>
-let scale = 1;
-let startDist = null;
-
-function getDist(touches){
-  const dx = touches[0].clientX - touches[1].clientX;
-  const dy = touches[0].clientY - touches[1].clientY;
-  return Math.hypot(dx, dy);
-}
-
-document.getElementById("content-layer")
-  .addEventListener("touchstart", e => {
-    if(e.touches.length === 2){
-      startDist = getDist(e.touches);
-    }
-  }, { passive:false });
-
-document.getElementById("content-layer")
-  .addEventListener("touchmove", e => {
-    if(e.touches.length === 2 && startDist){
-      e.preventDefault();
-
-      const d = getDist(e.touches);
-      scale *= d / startDist;
-      scale = Math.min(Math.max(scale, 0.6), 2.5);
-
-      document.getElementById("content-layer")
-        .style.transform = `scale(${scale})`;
-
-      startDist = d;
-    }
-  }, { passive:false });
-
-document.getElementById("content-layer")
-  .addEventListener("touchend", ()=>{
-    startDist = null;
-  });
-</script>
-
-
 </script>
 
 
@@ -990,6 +951,39 @@ function selectPending(){
       if(cb) cb.checked = true;
     }
   });
+}
+
+let scale = 1;
+const content = document.getElementById("content-layer");
+
+/* ===== ピンチズーム ===== */
+let startDist = 0;
+
+document.addEventListener("touchstart", e => {
+  if (e.touches.length === 2) {
+    startDist = getDist(e.touches[0], e.touches[1]);
+  }
+}, { passive: false });
+
+document.addEventListener("touchmove", e => {
+  if (e.touches.length === 2) {
+    e.preventDefault();
+
+    const dist = getDist(e.touches[0], e.touches[1]);
+    const delta = dist / startDist;
+
+    scale = Math.min(3, Math.max(0.5, scale * delta));
+    startDist = dist;
+
+    content.style.transform = `scale(${scale})`;
+    content.style.transformOrigin = "0 0";
+  }
+}, { passive: false });
+
+function getDist(t1, t2) {
+  const dx = t1.clientX - t2.clientX;
+  const dy = t1.clientY - t2.clientY;
+  return Math.hypot(dx, dy);
 }
 </script>
 
