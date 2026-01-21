@@ -878,19 +878,21 @@ function getMinScale(){
 function applyScale(cx, cy){
   const rect = contentLayer.getBoundingClientRect();
 
-  // 指の位置（contentLayer 内）
-  const originX = cx - rect.left;
-  const originY = cy - rect.top;
+  // ズーム前：指の下の論理座標
+  const ox = (cx - rect.left + scrollLayer.scrollLeft) / scale;
+  const oy = (cy - rect.top  + scrollLayer.scrollTop ) / scale;
 
-  // transform-origin を指の位置に
-  contentLayer.style.transformOrigin = `${originX}px ${originY}px`;
-
-  // scale のみ適用（scrollは触らない）
+  // scale 適用（originは固定）
   contentLayer.style.transform = `scale(${scale})`;
+
+  // スクロール領域を拡張（★これが超重要）
+  contentLayer.style.width  = (100 / scale) + "%";
+  contentLayer.style.height = (100 / scale) + "%";
+
+  // ズーム後：同じ論理点が指の下に来るよう補正
+  scrollLayer.scrollLeft = ox * scale - (cx - rect.left);
+  scrollLayer.scrollTop  = oy * scale - (cy - rect.top);
 }
-
-
-
 
 scrollLayer.addEventListener("touchstart", e => {
   if (e.touches.length === 2) {
