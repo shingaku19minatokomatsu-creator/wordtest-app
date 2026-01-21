@@ -540,10 +540,30 @@ canvas {
   line-height: 1.1;
 }
 
+/* ===== 固定UIレイヤー（ズーム非影響） ===== */
+#ui-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  pointer-events: none;   /* ★ 超重要 */
+}
+
+/* toolbarだけ操作可能 */
+#ui-layer .toolbar {
+  pointer-events: auto;
+  position: absolute;
+  top: calc(12px + env(safe-area-inset-top));
+  right: calc(12px + env(safe-area-inset-right));
+}
+
+/* ===== 描画・ズームレイヤー ===== */
+#content-layer {
+  touch-action: pan-y pinch-zoom;
+}
+
 
 /* ===== 操作ツールバー ===== */
 .toolbar {
-  position: fixed;
   top: calc(12px + env(safe-area-inset-top));
   right: calc(12px + env(safe-area-inset-right));
   display: flex;
@@ -622,56 +642,61 @@ canvas {
 </head>
 
 <body class="html-test">
-<div id="print-root">
 
-
-<div class="header">
-  <div>
-    <h2>shingaku19minato test</h2>
-    <div>words {{sheet}}（{{start}}～{{end}}）</div>
-  </div>
-
-  <div class="header-right">
-    name：<canvas width="140" height="28"></canvas>
-    score：<canvas width="140" height="28"></canvas>
+<!-- ===== 固定UIレイヤー（ズーム非影響） ===== -->
+<div id="ui-layer">
+  <div class="toolbar">
+    <button onclick="toggleAll()">解答</button>
+    <button onclick="setColor('black')">⚫黒</button>
+    <button onclick="setColor('red')">🔴赤</button>
+    <button onclick="setMode('eraser')">🧽消</button>
+    <button onclick="clearAll()">🗑全消</button>
+    <button onclick="window.print()">🖨印刷</button>
   </div>
 </div>
 
-<div class="toolbar">
-  <button onclick="toggleAll()">解答</button>
-  <button onclick="setColor('black')">⚫黒</button>
-  <button onclick="setColor('red')">🔴赤</button>
-  <button onclick="setMode('eraser')">🧽消</button>
-  <button onclick="clearAll()">🗑全消</button>
-  <button onclick="window.print()">🖨印刷</button>
-</div>
+<!-- ===== 描画・ズームレイヤー ===== -->
+<div id="content-layer">
+  <div id="print-root">
 
+    <div class="header">
+      <div>
+        <h2>shingaku19minato test</h2>
+        <div>words {{sheet}}（{{start}}～{{end}}）</div>
+      </div>
 
-    {% for i in range(20) %}
-    {% set item  = items[i] %}
-    {% set item2 = items[i+20] %}
-
-    <div class="item">
-        <!-- 左（1〜20） -->
-        <div>{{item.no}}.</div>
-        <div>{{item.q}}</div>
-        <div class="answer" id="ans-{{item.no}}">{{item.a}}</div>
-        <canvas width="160" height="28"></canvas>
-
-
-        <!-- 右（21〜40） -->
-        <div>{{item2.no}}.</div>
-        <div>{{item2.q}}</div>
-        <div class="answer" id="ans-{{item2.no}}">{{item2.a}}</div>
-        <canvas width="160" height="28"></canvas>
-
+      <div class="header-right">
+        name：<canvas width="140" height="28"></canvas>
+        score：<canvas width="140" height="28"></canvas>
+      </div>
     </div>
-    
-    {% endfor %}
-    
-    <div class="item dummy"></div>
-    
+
+{% for i in range(20) %}
+{% set item  = items[i] %}
+{% set item2 = items[i+20] %}
+
+<div class="item">
+  <!-- 左（1〜20） -->
+  <div>{{item.no}}.</div>
+  <div>{{item.q}}</div>
+  <div class="answer" id="ans-{{item.no}}">{{item.a}}</div>
+  <canvas width="160" height="28"></canvas>
+
+  <!-- 右（21〜40） -->
+  <div>{{item2.no}}.</div>
+  <div>{{item2.q}}</div>
+  <div class="answer" id="ans-{{item2.no}}">{{item2.a}}</div>
+  <canvas width="160" height="28"></canvas>
+</div>
+
+{% endfor %}
+<div class="item dummy"></div>
+
+  </div> <!-- print-root -->
+</div> <!-- content-layer -->
+
 <script>
+
 let mode = "pen";
 let color = "#000";
 
@@ -1362,7 +1387,6 @@ def make_two_page_pdf(items, sheet, start, end):
 
     c.save()
     return filename
-
 
 
 
