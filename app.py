@@ -781,13 +781,13 @@ document.querySelectorAll("canvas").forEach(c => {
   ctx.lineJoin = "round";
   ctx.strokeStyle = color;
 
-  function getPos(e){
-    const rect = c.getBoundingClientRect();
-    return {
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top
-    };
-  }
+function getPos(e){
+  const rect = c.getBoundingClientRect();
+  return {
+    x: e.clientX - rect.left,
+    y: e.clientY - rect.top
+  };
+}
 
   c.addEventListener("touchstart", e=>{
     e.preventDefault();
@@ -842,6 +842,8 @@ document.querySelectorAll('.answer, .item > div:nth-child(2), .item > div:nth-ch
 const scrollLayer  = document.getElementById("scroll-layer");
 const contentLayer = document.getElementById("content-layer");
 
+let startScale = 1;
+let pinchCenter = { x: 0, y: 0 };
 let scale = 1;
 let startDist = null;
 
@@ -850,6 +852,14 @@ function getDistance(t1, t2){
   const dy = t1.clientY - t2.clientY;
   return Math.hypot(dx, dy);
 }
+
+function getCenter(t1, t2){
+  return {
+    x: (t1.clientX + t2.clientX) / 2,
+    y: (t1.clientY + t2.clientY) / 2
+  };
+}
+
 
 /* scroll-layer 基準で最小倍率を決める */
 function getMinScale(){
@@ -863,20 +873,32 @@ function getMinScale(){
   return Math.min(sx, sy, 1);
 }
 
-function applyScale(){
-  contentLayer.style.transform = `scale(${scale})`;
+function applyScale(cx, cy){
+  const rect = contentLayer.getBoundingClientRect();
 
-  // ★ スクロール領域を正しく拡張する
+  // ズーム前の論理座標
+  const ox = (cx - rect.left + scrollLayer.scrollLeft) / scale;
+  const oy = (cy - rect.top  + scrollLayer.scrollTop ) / scale;
+
+  contentLayer.style.transform = `scale(${scale})`;
   contentLayer.style.width  = (100 / scale) + "%";
   contentLayer.style.height = (100 / scale) + "%";
+
+  // 同じ点が指の下に残るように補正
+  scrollLayer.scrollLeft = ox * scale - (cx - rect.left);
+  scrollLayer.scrollTop  = oy * scale - (cy - rect.top);
 }
+
 
 
 scrollLayer.addEventListener("touchstart", e => {
   if (e.touches.length === 2) {
     startDist = getDistance(e.touches[0], e.touches[1]);
+    startScale = scale;
+    pinchCenter = getCenter(e.touches[0], e.touches[1]);
   }
 }, { passive: false });
+
 
 scrollLayer.addEventListener("touchmove", e => {
   if (e.touches.length === 2) {
@@ -884,19 +906,31 @@ scrollLayer.addEventListener("touchmove", e => {
     e.stopPropagation(); // ← 追加（暴走防止）
 
     const newDist = getDistance(e.touches[0], e.touches[1]);
-    const delta = newDist / startDist;
-    startDist = newDist;
-
+    const ratio = newDist / startDist;
     const minScale = getMinScale();
-    scale = Math.min(3, Math.max(minScale, scale * delta));
-    applyScale();
+
+    scale = Math.min(3, Math.max(minScale, startScale * ratio));
+    applyScale(pinchCenter.x, pinchCenter.y);
+
   }
 }, { passive: false });
+
+scrollLayer.addEventListener("touchend", e => {
+  if (e.touches.length < 2) {
+    startDist = null;
+  }
+}, { passive: false });
+
+scrollLayer.addEventListener("touchcancel", () => {
+  startDist = null;
+}, { passive: false });
+
 
 
 /* 初期状態：画面フィット */
 scale = getMinScale();
-applyScale();
+applyScale(scrollLayer.clientWidth / 2, scrollLayer.clientHeight / 2);
+
 
 </script>
 
