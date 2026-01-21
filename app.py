@@ -784,10 +784,11 @@ document.querySelectorAll("canvas").forEach(c => {
 function getPos(e){
   const rect = c.getBoundingClientRect();
   return {
-    x: e.clientX - rect.left,
-    y: e.clientY - rect.top
+    x: (e.clientX - rect.left) / scale,
+    y: (e.clientY - rect.top ) / scale
   };
 }
+
 
   c.addEventListener("touchstart", e=>{
     e.preventDefault();
@@ -854,11 +855,13 @@ function getDistance(t1, t2){
 }
 
 function getCenter(t1, t2){
+  const rect = scrollLayer.getBoundingClientRect();
   return {
-    x: (t1.clientX + t2.clientX) / 2,
-    y: (t1.clientY + t2.clientY) / 2
+    x: (t1.clientX + t2.clientX) / 2 - rect.left + scrollLayer.scrollLeft,
+    y: (t1.clientY + t2.clientY) / 2 - rect.top  + scrollLayer.scrollTop
   };
 }
+
 
 
 /* scroll-layer 基準で最小倍率を決める */
@@ -874,19 +877,15 @@ function getMinScale(){
 }
 
 function applyScale(cx, cy){
-  const rect = contentLayer.getBoundingClientRect();
-
-  // ズーム前の論理座標
-  const ox = (cx - rect.left + scrollLayer.scrollLeft) / scale;
-  const oy = (cy - rect.top  + scrollLayer.scrollTop ) / scale;
+  const ox = cx / scale;
+  const oy = cy / scale;
 
   contentLayer.style.transform = `scale(${scale})`;
   contentLayer.style.width  = (100 / scale) + "%";
   contentLayer.style.height = (100 / scale) + "%";
 
-  // 同じ点が指の下に残るように補正
-  scrollLayer.scrollLeft = ox * scale - (cx - rect.left);
-  scrollLayer.scrollTop  = oy * scale - (cy - rect.top);
+  scrollLayer.scrollLeft = ox * scale - scrollLayer.clientWidth  / 2;
+  scrollLayer.scrollTop  = oy * scale - scrollLayer.clientHeight / 2;
 }
 
 
