@@ -877,6 +877,7 @@ function getMinScale(){
 }
 
 function applyScale(cx, cy){
+  // cx, cy は「scrollLayer 内の論理座標」
   const ox = cx / scale;
   const oy = cy / scale;
 
@@ -884,11 +885,10 @@ function applyScale(cx, cy){
   contentLayer.style.width  = (100 / scale) + "%";
   contentLayer.style.height = (100 / scale) + "%";
 
+  // 同じ論理点が指の下に残るよう補正
   scrollLayer.scrollLeft = ox * scale - scrollLayer.clientWidth  / 2;
   scrollLayer.scrollTop  = oy * scale - scrollLayer.clientHeight / 2;
 }
-
-
 
 scrollLayer.addEventListener("touchstart", e => {
   if (e.touches.length === 2) {
@@ -908,8 +908,12 @@ scrollLayer.addEventListener("touchmove", e => {
     const ratio = newDist / startDist;
     const minScale = getMinScale();
 
+    // ★ 毎回「今の指の中点」を使う
+    const center = getCenter(e.touches[0], e.touches[1]);
+
     scale = Math.min(3, Math.max(minScale, startScale * ratio));
-    applyScale(pinchCenter.x, pinchCenter.y);
+    applyScale(center.x, center.y);
+
 
   }
 }, { passive: false });
