@@ -421,7 +421,7 @@ HTML_TEST_TEMPLATE = """
 .html-test {
   margin: 0;
   padding: 0;
-  background: #f5f5f5;
+  background: #fff;
 }
 
 .html-test #print-root {
@@ -561,8 +561,9 @@ canvas {
 }
 
 #content-layer {
+  min-width: 100%;
   transform-origin: 0 0;
-  touch-action: none;
+  touch-action: pan-x pan-y;  /* ← これに変更 */
   will-change: transform;
 }
 
@@ -653,7 +654,7 @@ html, body {
   width: 100vw;
   height: 100vh;
   overflow: auto;   /* ← スクロールはここだけ */
-  background: #f5f5f5;
+  background:  #fff;
 }
 
 
@@ -876,7 +877,8 @@ scrollLayer.addEventListener("touchstart", e => {
 
 scrollLayer.addEventListener("touchmove", e => {
   if (e.touches.length === 2) {
-    e.preventDefault();   // ← ブラウザズームだけ止める
+    e.preventDefault();   // ← ブラウザのズームだけ止める
+    e.stopPropagation(); // ← 追加（暴走防止）
 
     const newDist = getDistance(e.touches[0], e.touches[1]);
     const delta = newDist / startDist;
@@ -884,10 +886,10 @@ scrollLayer.addEventListener("touchmove", e => {
 
     const minScale = getMinScale();
     scale = Math.min(3, Math.max(minScale, scale * delta));
-
     applyScale();
   }
 }, { passive: false });
+
 
 /* 初期状態：画面フィット */
 scale = getMinScale();
