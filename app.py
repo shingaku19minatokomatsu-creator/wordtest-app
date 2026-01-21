@@ -561,8 +561,9 @@ canvas {
 }
 
 #content-layer {
-  touch-action: none;
   transform-origin: 0 0;
+  touch-action: none;
+  will-change: transform;
 }
 
 
@@ -820,7 +821,7 @@ document.querySelectorAll('.answer, .item > div:nth-child(2), .item > div:nth-ch
     }
   });
   
-/* ===== ピンチズーム（content-layerのみ拡大）===== */
+/* ===== ピンチズーム（スクロール対応・最小倍率制御）===== */
 const contentLayer = document.getElementById("content-layer");
 
 let scale = 1;
@@ -832,6 +833,25 @@ function getDistance(t1, t2){
   return Math.hypot(dx, dy);
 }
 
+/* ★ 画面にフィットする最小倍率を計算 */
+function getMinScale(){
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+
+  const rect = contentLayer.getBoundingClientRect();
+  const sx = vw / rect.width;
+  const sy = vh / rect.height;
+
+  return Math.min(sx, sy, 1);
+}
+
+/* ★ 見た目 + スクロール領域を同時に調整 */
+function applyScale(){
+  contentLayer.style.transform = `scale(${scale})`;
+  contentLayer.style.width  = `${100 / scale}%`;
+  contentLayer.style.height = `${100 / scale}%`;
+}
+
 document.addEventListener("touchstart", e => {
   if (e.touches.length === 2) {
     startDist = getDistance(e.touches[0], e.touches[1]);
@@ -840,18 +860,27 @@ document.addEventListener("touchstart", e => {
 
 document.addEventListener("touchmove", e => {
   if (e.touches.length === 2) {
-    e.preventDefault(); // ← ブラウザズーム阻止
+    e.preventDefault();
 
     const newDist = getDistance(e.touches[0], e.touches[1]);
     const delta = newDist / startDist;
-
-    scale = Math.min(3, Math.max(0.5, scale * delta));
     startDist = newDist;
 
-    contentLayer.style.transform = `scale(${scale})`;
-    contentLayer.style.transformOrigin = "0 0";
+    const minScale = getMinScale();
+    scale = Math.min(3, Math.max(minScale, scale * delta));
+
+    applyScale();
   }
 }, { passive: false });
+
+window.addEventListener("resize", () => {
+  scale = Math.max(getMinScale(), scale);
+  applyScale();
+});
+
+/* 初期状態：画面いっぱいにフィット */
+scale = getMinScale();
+applyScale();
 
 
 </script>
