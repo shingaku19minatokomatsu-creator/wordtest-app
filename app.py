@@ -561,7 +561,6 @@ canvas {
 }
 
 #content-layer {
-  transform-origin: 0 0;
   min-width: 100%;
   min-height: 100%;
 }
@@ -879,19 +878,18 @@ function getMinScale(){
 function applyScale(cx, cy){
   const rect = contentLayer.getBoundingClientRect();
 
-  // ズーム前：指の下にある「論理座標」
-  const ox = (cx - rect.left) / scale;
-  const oy = (cy - rect.top ) / scale;
+  // 指の位置（contentLayer 内座標）
+  const originX = cx - rect.left;
+  const originY = cy - rect.top;
 
-  // scale 適用
+  // ★ ここが決定打
+  contentLayer.style.transformOrigin = `${originX}px ${originY}px`;
   contentLayer.style.transform = `scale(${scale})`;
+
   contentLayer.style.width  = (100 / scale) + "%";
   contentLayer.style.height = (100 / scale) + "%";
-
-  // ズーム後：同じ論理座標が指の下に来るよう scroll を補正
-  scrollLayer.scrollLeft += ox * scale - (cx - rect.left);
-  scrollLayer.scrollTop  += oy * scale - (cy - rect.top);
 }
+
 
 
 scrollLayer.addEventListener("touchstart", e => {
@@ -1512,7 +1510,6 @@ def make_two_page_pdf(items, sheet, start, end):
 
     c.save()
     return filename
-
 
 
 
