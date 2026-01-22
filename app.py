@@ -561,9 +561,11 @@ canvas {
 }
 
 #content-layer {
-  min-width: 100%;
-  min-height: 100%;
+  padding: 120px;
+  box-sizing: border-box;
 }
+
+
 
 /* ===== 操作ツールバー ===== */
 .toolbar {
@@ -882,17 +884,34 @@ function applyScale(cx, cy){
   const ox = (cx - rect.left + scrollLayer.scrollLeft) / scale;
   const oy = (cy - rect.top  + scrollLayer.scrollTop ) / scale;
 
-  // scale 適用（originは固定）
+  // scale 適用
   contentLayer.style.transform = `scale(${scale})`;
 
-  // スクロール領域を拡張（★これが超重要）
+  // スクロール領域を拡張
   contentLayer.style.width  = (100 / scale) + "%";
   contentLayer.style.height = (100 / scale) + "%";
 
-  // ズーム後：同じ論理点が指の下に来るよう補正
+  // 同じ論理点が指の下に来るよう補正
   scrollLayer.scrollLeft = ox * scale - (cx - rect.left);
   scrollLayer.scrollTop  = oy * scale - (cy - rect.top);
+
+  // ===== 正しいスクロール制限（paddingは含めない）=====
+  const maxScrollLeft =
+    contentLayer.scrollWidth - scrollLayer.clientWidth;
+  const maxScrollTop =
+    contentLayer.scrollHeight - scrollLayer.clientHeight;
+
+  scrollLayer.scrollLeft = Math.max(
+    0,
+    Math.min(scrollLayer.scrollLeft, maxScrollLeft)
+  );
+
+  scrollLayer.scrollTop = Math.max(
+    0,
+    Math.min(scrollLayer.scrollTop, maxScrollTop)
+  );
 }
+
 
 scrollLayer.addEventListener("touchstart", e => {
   if (e.touches.length === 2) {
