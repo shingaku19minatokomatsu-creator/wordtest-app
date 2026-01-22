@@ -454,9 +454,23 @@ html, body {
 
 /* ===== header ===== */
 .header {
-  position: relative;
-  margin-bottom: 4mm;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+
+  margin-bottom: 16px;   /* ← 問題と確実に分離 */
 }
+
+.header-left {
+  flex: 1;
+}
+
+.header-right {
+  display: flex;
+  gap: 12px;
+  white-space: nowrap;
+}
+
 
 .header canvas {
   vertical-align: middle;
@@ -568,9 +582,11 @@ canvas {
 }
 
 #content-layer {
-  padding: 60px 160px 120px 100px;
+  padding: 60px 160px 120px 80px;
+  /* 上   右    下    左 */
   box-sizing: border-box;
 }
+
 
 
 /* ===== name / score（ズーム非影響）===== */
@@ -721,7 +737,7 @@ html, body {
    <div id="content-layer">
     <div id="print-root">
 
-      <div class="header item header-item">
+      <div class="header">
         <!-- 左側（タイトル） -->
         <div class="header-left">
           <h2>shingaku19minato test</h2>
