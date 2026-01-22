@@ -682,9 +682,9 @@ canvas {
     overflow: visible !important;
   }
 
-  /* ===== 印刷倍率を固定（★65%）===== */
+  /* ===== 印刷倍率を固定（★60%）===== */
   #content-layer {
-    transform: scale(0.65) !important;
+    transform: scale(0.60) !important;
     transform-origin: top left !important;
 
     width: auto !important;
@@ -984,7 +984,7 @@ function applyScale(cx, cy){
 }
 
 // ===== 初期表示（必須）=====
-const INITIAL_SCALE_FACTOR = 0.65;
+const INITIAL_SCALE_FACTOR = 0.55;
 
 window.addEventListener("load", () => {
   scale = getMinScale() * INITIAL_SCALE_FACTOR;
