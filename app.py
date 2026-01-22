@@ -458,18 +458,6 @@ html, body {
   margin-bottom: 4mm;
 }
 
-/* ===== name / score ===== */
-.header-right {
-  position: absolute;
-  top: 0;
-  right: 0;                 /* ★ print-root の内側右端 */
-
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  white-space: nowrap;
-}
-
 .header canvas {
   vertical-align: middle;
   margin-right: 8px;
@@ -580,9 +568,10 @@ canvas {
 }
 
 #content-layer {
-  padding: 80px 120px;   /* ← 上下80px / 左右120px */
+  padding: 60px 160px 120px 100px;
   box-sizing: border-box;
 }
+
 
 /* ===== name / score（ズーム非影響）===== */
 #ui-layer .header-right {
@@ -732,18 +721,20 @@ html, body {
    <div id="content-layer">
     <div id="print-root">
 
-      <div class="header">
+      <div class="header item header-item">
+        <!-- 左側（タイトル） -->
         <div class="header-left">
           <h2>shingaku19minato test</h2>
           <div>words {{sheet}}（{{start}}～{{end}}）</div>
         </div>
 
-        <!-- ★ ここに戻す -->
+        <!-- 右側（21〜40と同じ列） -->
         <div class="header-right">
           name：<canvas width="140" height="28"></canvas>
           score：<canvas width="140" height="28"></canvas>
         </div>
       </div>
+
     {% for i in range(20) %}
     {% set item  = items[i] %}
     {% set item2 = items[i+20] %}
@@ -968,20 +959,42 @@ function applyScale(cx, cy){
 }
 
 // ===== 初期表示（必須）=====
+// ===== 初期表示（必須）=====
 const INITIAL_SCALE_FACTOR = 0.67;
 
 window.addEventListener("load", () => {
   scale = getMinScale() * INITIAL_SCALE_FACTOR;
 
-  contentLayer.style.transformOrigin = "0 0";
-  contentLayer.style.transform = `scale(${scale})`;
+  // ★ 必ず applyScale を通す
+  applyScale(0, 0);
 
+  // ★ 左上基準で表示
   scrollLayer.scrollLeft = 0;
   scrollLayer.scrollTop  = 0;
 });
 
 
+// ===== 印刷時スケール制御 =====
+let savedScale = 1;
 
+window.addEventListener("beforeprint", () => {
+  savedScale = scale;
+  scale = 1;
+
+  applyScale(0, 0);
+
+  scrollLayer.scrollLeft = 0;
+  scrollLayer.scrollTop  = 0;
+});
+
+window.addEventListener("afterprint", () => {
+  scale = savedScale;
+
+  applyScale(0, 0);
+
+  scrollLayer.scrollLeft = 0;
+  scrollLayer.scrollTop  = 0;
+});
 
 scrollLayer.addEventListener("touchstart", e => {
   if (e.touches.length === 2) {
