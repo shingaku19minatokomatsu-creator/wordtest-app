@@ -452,24 +452,39 @@ html, body {
   overscroll-behavior: none;
 }
 
-/* ===== header ===== */
+/* ===== header：問題と同じ横構造 ===== */
 .header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
+  display: grid;
+  grid-template-columns:
+    44px
+    minmax(220px, 1fr)
+    minmax(120px, 160px)
+    180px
+    44px
+    minmax(220px, 1fr)
+    minmax(120px, 160px)
+    180px
+    20px;
 
-  margin-bottom: 16px;   /* ← 問題と確実に分離 */
+  align-items: start;
+  margin-bottom: 16px;
 }
 
+/* 左側（タイトル） */
 .header-left {
-  flex: 1;
+  grid-column: 1 / 5;
 }
 
+/* 右側（name / score） */
 .header-right {
+  grid-column: 6 / 9;
+  justify-self: end;
+
   display: flex;
   gap: 12px;
   white-space: nowrap;
 }
+
 
 
 .header canvas {
@@ -942,39 +957,32 @@ function getMinScale(){
 function applyScale(cx, cy){
   const rect = contentLayer.getBoundingClientRect();
 
-  // ズーム前：指の下の論理座標
   const ox = (cx - rect.left + scrollLayer.scrollLeft) / scale;
   const oy = (cy - rect.top  + scrollLayer.scrollTop ) / scale;
 
-  // scale 適用
   contentLayer.style.transform = `scale(${scale})`;
-
-  // スクロール領域を拡張
   contentLayer.style.width  = (100 / scale) + "%";
   contentLayer.style.height = (100 / scale) + "%";
 
-  // 同じ論理点が指の下に来るよう補正
   scrollLayer.scrollLeft = ox * scale - (cx - rect.left);
   scrollLayer.scrollTop  = oy * scale - (cy - rect.top);
 
-  // ===== 正しいスクロール制限（paddingは含めない）=====
-  const maxScrollLeft =
-    contentLayer.scrollWidth - scrollLayer.clientWidth;
-  const maxScrollTop =
-    contentLayer.scrollHeight - scrollLayer.clientHeight;
+  /* ===== 余白込みでスクロール制限 ===== */
+  const PADDING_RIGHT = 340 * scale;
+  const PADDING_BOTTOM = 120 * scale;
 
-  scrollLayer.scrollLeft = Math.max(
-    0,
-    Math.min(scrollLayer.scrollLeft, maxScrollLeft)
-  );
+  const minLeft = 0;
+  const minTop  = 0;
 
-  scrollLayer.scrollTop = Math.max(
-    0,
-    Math.min(scrollLayer.scrollTop, maxScrollTop)
-  );
+  const maxLeft =
+    contentLayer.scrollWidth - scrollLayer.clientWidth + PADDING_RIGHT;
+  const maxTop =
+    contentLayer.scrollHeight - scrollLayer.clientHeight + PADDING_BOTTOM;
+
+  scrollLayer.scrollLeft = Math.min(maxLeft, Math.max(minLeft, scrollLayer.scrollLeft));
+  scrollLayer.scrollTop  = Math.min(maxTop,  Math.max(minTop,  scrollLayer.scrollTop));
 }
 
-// ===== 初期表示（必須）=====
 // ===== 初期表示（必須）=====
 const INITIAL_SCALE_FACTOR = 0.67;
 
