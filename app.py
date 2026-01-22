@@ -428,12 +428,13 @@ HTML_TEST_TEMPLATE = """
   background: #fff;
   margin: 0;
 
-  padding-left: 20px;
-  padding-right: 260px; /* ★ header-right の幅分 */
+  padding-left: 120px;   /* ← 左も十分余裕 */
+  padding-right: 320px;  /* ← header-right + 余白 */
 
   max-width: none;
   box-shadow: none;
 }
+
 
 
 
@@ -452,22 +453,19 @@ html, body {
 .header {
   position: relative;
   margin-bottom: 4mm;
-
-  /* ★ flexは使うが space-between は捨てる */
   display: block;
 }
-
 
 .header-right {
   position: absolute;
   top: 20px;
-  right: 0;
+  right: 20px;
 
   display: flex;
-  align-items: center;
   gap: 12px;
   white-space: nowrap;
 }
+
 
 
 
@@ -581,7 +579,7 @@ canvas {
 }
 
 #content-layer {
-  padding: 80px;              /* 全方向余白 */
+  padding: 80px 120px;   /* ← 上下80px / 左右120px */
   box-sizing: border-box;
 }
 
