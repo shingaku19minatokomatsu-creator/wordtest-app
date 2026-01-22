@@ -427,10 +427,14 @@ HTML_TEST_TEMPLATE = """
 .html-test #print-root {
   background: #fff;
   margin: 0;
-  padding: 0 20px;   /* ← 左右だけスペース */
-  max-width: none;   /* ★ 全画面 */
+
+  padding-left: 20px;
+  padding-right: 260px; /* ★ header-right の幅分 */
+
+  max-width: none;
   box-shadow: none;
 }
+
 
 
 /* ===== 画面では canvas をはみ出させない ===== */
@@ -446,13 +450,19 @@ html, body {
 
 /* ===== ヘッダ ===== */
 .header {
-  display: flex;
-  justify-content: space-between;
+  position: relative;
   margin-bottom: 4mm;
+
+  /* ★ flexは使うが space-between は捨てる */
+  display: block;
 }
 
+
 .header-right {
-  margin-top: 20px;
+  position: absolute;
+  top: 20px;
+  right: 0;
+
   display: flex;
   align-items: center;
   gap: 12px;
@@ -520,6 +530,15 @@ html, body {
   visibility: visible;
 }
 
+#right-fixed {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 200px;      /* 好きな幅 */
+  text-align: right;
+}
+
+
 
 /* ===== canvas ===== */
 
@@ -544,6 +563,7 @@ canvas {
   line-height: 1.1;
 }
 
+
 /* ===== 固定UIレイヤー（ズーム非影響） ===== */
 #ui-layer {
   position: fixed;
@@ -561,7 +581,7 @@ canvas {
 }
 
 #content-layer {
-  padding: 120px;
+  padding: 200px;
   box-sizing: border-box;
 }
 
@@ -953,9 +973,24 @@ scrollLayer.addEventListener("touchcancel", () => {
 
 
 
-/* 初期状態：画面フィット */
-scale = getMinScale();
+// 初期状態：画面にちょうどフィット
+scale = getFitScale();
 applyScale(scrollLayer.clientWidth / 2, scrollLayer.clientHeight / 2);
+
+// 左上から表示（変な位置防止）
+scrollLayer.scrollLeft = 0;
+scrollLayer.scrollTop  = 0;
+
+function getFitScale(){
+  const vw = scrollLayer.clientWidth;
+  const vh = scrollLayer.clientHeight;
+
+  const rect = contentLayer.getBoundingClientRect();
+  const sx = vw / rect.width;
+  const sy = vh / rect.height;
+
+  return Math.min(sx, sy);
+}
 
 
 </script>
