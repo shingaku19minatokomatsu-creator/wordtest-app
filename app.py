@@ -583,6 +583,19 @@ canvas {
   box-sizing: border-box;
 }
 
+/* ===== name / score（ズーム非影響）===== */
+#ui-layer .header-right {
+  position: absolute;
+  top: calc(60px + env(safe-area-inset-top)); /* toolbarの下 */
+  right: calc(20px + env(safe-area-inset-right));
+
+  display: flex;
+  gap: 12px;
+  white-space: nowrap;
+
+  pointer-events: auto;   /* ★ canvasを書けるように */
+}
+
 
 
 
@@ -643,13 +656,16 @@ canvas {
     padding: 0;
   }
 
-  /* ===== ズーム解除 ===== */
+  /* ===== スクロール解除 ===== */
   #scroll-layer {
     overflow: visible !important;
   }
 
+  /* ===== 印刷倍率を固定（★67%）===== */
   #content-layer {
-    transform: none !important;
+    transform: scale(0.67) !important;
+    transform-origin: top left !important;
+
     width: auto !important;
     height: auto !important;
   }
@@ -663,11 +679,14 @@ canvas {
     background: #fff;
   }
 
+  /* ===== UI非表示 ===== */
+  #ui-layer,
   .toolbar,
   button {
     display: none !important;
   }
 }
+
 
 
 /* ===== スクロール担当レイヤー ===== */
@@ -705,6 +724,12 @@ html, body {
     <button onclick="clearAll()">🗑全消</button>
     <button onclick="window.print()">🖨印刷</button>
   </div>
+
+  <!-- ★ name / score をここへ -->
+  <div class="header-right">
+    name：<canvas width="140" height="28"></canvas>
+    score：<canvas width="140" height="28"></canvas>
+  </div>
 </div>
 
 <!-- ===== 描画・ズームレイヤー ===== -->
@@ -716,11 +741,6 @@ html, body {
         <div>
             <h2>shingaku19minato test</h2>
             <div>words {{sheet}}（{{start}}～{{end}}）</div>
-        </div>
-
-        <div class="header-right">
-            name：<canvas width="140" height="28"></canvas>
-            score：<canvas width="140" height="28"></canvas>
         </div>
         </div>
 
@@ -952,11 +972,15 @@ const INITIAL_SCALE_FACTOR = 0.67;
 
 window.addEventListener("load", () => {
   scale = getMinScale() * INITIAL_SCALE_FACTOR;
-  applyScale(
-    scrollLayer.clientWidth / 2,
-    scrollLayer.clientHeight / 2
-  );
+
+  contentLayer.style.transformOrigin = "0 0";
+  contentLayer.style.transform = `scale(${scale})`;
+
+  scrollLayer.scrollLeft = 0;
+  scrollLayer.scrollTop  = 0;
 });
+
+
 
 
 scrollLayer.addEventListener("touchstart", e => {
