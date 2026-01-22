@@ -500,7 +500,7 @@ html, body {
 
 
 .item.dummy {
-  height: 36px;
+  height: 120px;
 }
 
 
@@ -581,9 +581,10 @@ canvas {
 }
 
 #content-layer {
-  padding: 200px;
+  padding: 80px;              /* 全方向余白 */
   box-sizing: border-box;
 }
+
 
 
 
@@ -633,24 +634,35 @@ canvas {
 }
 
 @media print {
+
   @page {
     size: A4 landscape;
-    margin: 15mm;   /* ← app3 と同じ */
+    margin: 15mm;
   }
 
   html, body {
     margin: 0;
     padding: 0;
   }
-  
-  canvas {
-    background: #fff;
+
+  /* ===== ズーム解除 ===== */
+  #scroll-layer {
+    overflow: visible !important;
+  }
+
+  #content-layer {
+    transform: none !important;
+    width: auto !important;
+    height: auto !important;
   }
 
   #print-root {
-    transform: scale(0.70);
-    transform-origin: top left;
-    width: calc(100% / 0.70);
+    transform: none !important;
+    width: auto !important;
+  }
+
+  canvas {
+    background: #fff;
   }
 
   .toolbar,
@@ -658,6 +670,7 @@ canvas {
     display: none !important;
   }
 }
+
 
 /* ===== スクロール担当レイヤー ===== */
 html, body {
@@ -890,12 +903,16 @@ function getMinScale(){
   const vw = scrollLayer.clientWidth;
   const vh = scrollLayer.clientHeight;
 
-  const rect = contentLayer.getBoundingClientRect();
+  const rect = document
+    .getElementById("print-root")
+    .getBoundingClientRect();
+
   const sx = vw / rect.width;
   const sy = vh / rect.height;
 
-  return Math.min(sx, sy, 1);
+  return Math.min(sx, sy);
 }
+
 
 function applyScale(cx, cy){
   const rect = contentLayer.getBoundingClientRect();
@@ -931,6 +948,15 @@ function applyScale(cx, cy){
     Math.min(scrollLayer.scrollTop, maxScrollTop)
   );
 }
+
+// ===== 初期表示（必須）=====
+window.addEventListener("load", () => {
+  scale = getMinScale();
+  applyScale(
+    scrollLayer.clientWidth / 2,
+    scrollLayer.clientHeight / 2
+  );
+});
 
 
 scrollLayer.addEventListener("touchstart", e => {
