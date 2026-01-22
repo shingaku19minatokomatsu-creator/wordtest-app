@@ -948,8 +948,10 @@ function applyScale(cx, cy){
 }
 
 // ===== 初期表示（必須）=====
+const INITIAL_SCALE_FACTOR = 0.67;
+
 window.addEventListener("load", () => {
-  scale = getMinScale();
+  scale = getMinScale() * INITIAL_SCALE_FACTOR;
   applyScale(
     scrollLayer.clientWidth / 2,
     scrollLayer.clientHeight / 2
