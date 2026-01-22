@@ -428,12 +428,15 @@ HTML_TEST_TEMPLATE = """
   background: #fff;
   margin: 0;
 
-  padding-left: 120px;   /* ← 左も十分余裕 */
-  padding-right: 320px;  /* ← header-right + 余白 */
+  padding-top: 40px;     /* ← 上は少しだけ */
+  padding-left: 60px;    /* ← 左は少し小さく */
+  padding-right: 340px;  /* ← 右は少し広め */
+  padding-bottom: 80px;  /* ← 下は今のまま */
 
   max-width: none;
   box-shadow: none;
 }
+
 
 
 
@@ -449,25 +452,23 @@ html, body {
   overscroll-behavior: none;
 }
 
-/* ===== ヘッダ ===== */
+/* ===== header ===== */
 .header {
   position: relative;
   margin-bottom: 4mm;
-  display: block;
 }
 
+/* ===== name / score ===== */
 .header-right {
   position: absolute;
-  top: 20px;
-  right: 20px;
+  top: 0;
+  right: 0;                 /* ★ print-root の内側右端 */
 
   display: flex;
+  align-items: center;
   gap: 12px;
   white-space: nowrap;
 }
-
-
-
 
 .header canvas {
   vertical-align: middle;
@@ -724,12 +725,6 @@ html, body {
     <button onclick="clearAll()">🗑全消</button>
     <button onclick="window.print()">🖨印刷</button>
   </div>
-
-  <!-- ★ name / score をここへ -->
-  <div class="header-right">
-    name：<canvas width="140" height="28"></canvas>
-    score：<canvas width="140" height="28"></canvas>
-  </div>
 </div>
 
 <!-- ===== 描画・ズームレイヤー ===== -->
@@ -737,13 +732,18 @@ html, body {
    <div id="content-layer">
     <div id="print-root">
 
-        <div class="header">
-        <div>
-            <h2>shingaku19minato test</h2>
-            <div>words {{sheet}}（{{start}}～{{end}}）</div>
-        </div>
+      <div class="header">
+        <div class="header-left">
+          <h2>shingaku19minato test</h2>
+          <div>words {{sheet}}（{{start}}～{{end}}）</div>
         </div>
 
+        <!-- ★ ここに戻す -->
+        <div class="header-right">
+          name：<canvas width="140" height="28"></canvas>
+          score：<canvas width="140" height="28"></canvas>
+        </div>
+      </div>
     {% for i in range(20) %}
     {% set item  = items[i] %}
     {% set item2 = items[i+20] %}
