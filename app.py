@@ -984,7 +984,7 @@ function applyScale(cx, cy){
 }
 
 // ===== 初期表示（必須）=====
-const INITIAL_SCALE_FACTOR = 0.67;
+const INITIAL_SCALE_FACTOR = 0.65;
 
 window.addEventListener("load", () => {
   scale = getMinScale() * INITIAL_SCALE_FACTOR;
