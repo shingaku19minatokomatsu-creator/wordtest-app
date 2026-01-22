@@ -682,9 +682,9 @@ canvas {
     overflow: visible !important;
   }
 
-  /* ===== 印刷倍率を固定（★67%）===== */
+  /* ===== 印刷倍率を固定（★65%）===== */
   #content-layer {
-    transform: scale(0.67) !important;
+    transform: scale(0.65) !important;
     transform-origin: top left !important;
 
     width: auto !important;
@@ -989,13 +989,15 @@ const INITIAL_SCALE_FACTOR = 0.67;
 window.addEventListener("load", () => {
   scale = getMinScale() * INITIAL_SCALE_FACTOR;
 
-  // ★ 必ず applyScale を通す
-  applyScale(0, 0);
+  // ★ 初期表示は transform だけ設定（補正しない）
+  contentLayer.style.transformOrigin = "0 0";
+  contentLayer.style.transform = `scale(${scale})`;
 
-  // ★ 左上基準で表示
+  // ★ スクロールは必ず左上
   scrollLayer.scrollLeft = 0;
   scrollLayer.scrollTop  = 0;
 });
+
 
 
 // ===== 印刷時スケール制御 =====
